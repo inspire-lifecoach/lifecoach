@@ -1,1 +1,8 @@
+
 project_id = "bizyqxovwmvrvhpijvkw"
+[functions.analyze_test]
+[functions.generate_insights]
+[functions.get_recommendations]
+[functions.compare_personality]
+[functions.process_voice_journal]
+[functions.journal_operations]

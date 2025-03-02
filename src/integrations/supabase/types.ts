@@ -36,6 +36,117 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_analyses: {
+        Row: {
+          created_at: string | null
+          entry_id: string
+          id: string
+          personality_insights: Json | null
+          sentiment: Json | null
+          themes: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          entry_id: string
+          id?: string
+          personality_insights?: Json | null
+          sentiment?: Json | null
+          themes?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          entry_id?: string
+          id?: string
+          personality_insights?: Json | null
+          sentiment?: Json | null
+          themes?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_analyses_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_entries: {
+        Row: {
+          audio_url: string | null
+          content: string
+          created_at: string | null
+          entry_type: string
+          id: string
+          mood: string | null
+          user_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          content: string
+          created_at?: string | null
+          entry_type?: string
+          id?: string
+          mood?: string | null
+          user_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          content?: string
+          created_at?: string | null
+          entry_type?: string
+          id?: string
+          mood?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personality_comparisons: {
+        Row: {
+          compared_with: string[] | null
+          created_at: string | null
+          differences: Json | null
+          id: string
+          similarities: Json | null
+          user_id: string
+          visualization_data: Json | null
+        }
+        Insert: {
+          compared_with?: string[] | null
+          created_at?: string | null
+          differences?: Json | null
+          id?: string
+          similarities?: Json | null
+          user_id: string
+          visualization_data?: Json | null
+        }
+        Update: {
+          compared_with?: string[] | null
+          created_at?: string | null
+          differences?: Json | null
+          id?: string
+          similarities?: Json | null
+          user_id?: string
+          visualization_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personality_comparisons_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -68,6 +179,44 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      recommendations: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          resources: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          resources?: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          resources?: Json | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tests: {
         Row: {
