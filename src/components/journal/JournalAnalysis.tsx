@@ -4,7 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { ChevronLeft } from "lucide-react";
 
 interface Sentiment {
   positive: number;
@@ -29,9 +31,10 @@ interface JournalAnalysisData {
 
 interface JournalAnalysisProps {
   entryId: string;
+  onClearSelection?: () => void;
 }
 
-const JournalAnalysis = ({ entryId }: JournalAnalysisProps) => {
+const JournalAnalysis = ({ entryId, onClearSelection }: JournalAnalysisProps) => {
   const [analysis, setAnalysis] = useState<JournalAnalysisData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +89,14 @@ const JournalAnalysis = ({ entryId }: JournalAnalysisProps) => {
     return (
       <Card className="bg-gray-50 border-t border-gray-200">
         <CardContent className="p-4">
+          <div className="flex justify-between items-center mb-4">
+            {onClearSelection && (
+              <Button variant="ghost" size="sm" onClick={onClearSelection} className="p-0">
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back to entries
+              </Button>
+            )}
+          </div>
           <p className="text-red-500">{error || "No analysis available."}</p>
         </CardContent>
       </Card>
@@ -95,6 +106,15 @@ const JournalAnalysis = ({ entryId }: JournalAnalysisProps) => {
   return (
     <Card className="bg-gray-50 border-t border-gray-200">
       <CardContent className="p-4">
+        <div className="flex justify-between items-center mb-4">
+          {onClearSelection && (
+            <Button variant="ghost" size="sm" onClick={onClearSelection} className="p-0">
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back to entries
+            </Button>
+          )}
+        </div>
+        
         <div className="space-y-4">
           <div>
             <h4 className="font-medium text-sm mb-2">Sentiment Analysis</h4>

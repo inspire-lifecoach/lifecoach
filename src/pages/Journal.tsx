@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +18,7 @@ export interface JournalEntry {
   content: string;
   created_at: string;
   mood: string | null;
-  entry_type: string;
+  entry_type: 'text' | 'voice';
   audio_url: string | null;
   user_id: string;
 }
@@ -228,7 +229,7 @@ const Journal = () => {
               </CardFooter>
             </Card>
             
-            <VoiceRecorder onVoiceEntryComplete={handleVoiceEntryComplete} isSubmitting={isSubmitting} />
+            <VoiceRecorder onRecordingComplete={handleVoiceEntryComplete} />
           </TabsContent>
           
           <TabsContent value="list" className="mt-6">
@@ -236,14 +237,14 @@ const Journal = () => {
               entries={entries}
               isLoading={isLoading}
               onEntryClick={handleEntryClick}
+              onRefresh={fetchEntries}
             />
           </TabsContent>
           
           <TabsContent value="analysis" className="mt-6">
             {selectedEntry ? (
               <JournalAnalysis 
-                entry={selectedEntry}
-                onClearSelection={handleClearSelection}
+                entryId={selectedEntry.id}
               />
             ) : (
               <p>No entry selected. Please select an entry to view its analysis.</p>

@@ -6,13 +6,14 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
 interface VoiceRecorderProps {
-  onRecordingComplete: (blob: Blob) => void;
+  onRecordingComplete: (blob: Blob, transcript: string) => void;
 }
 
 const VoiceRecorder = ({ onRecordingComplete }: VoiceRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -46,7 +47,7 @@ const VoiceRecorder = ({ onRecordingComplete }: VoiceRecorderProps) => {
       
       mediaRecorderRef.current.addEventListener("stop", () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        onRecordingComplete(blob);
+        processRecording(blob);
         
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
@@ -83,6 +84,33 @@ const VoiceRecorder = ({ onRecordingComplete }: VoiceRecorderProps) => {
     }
   };
 
+  const processRecording = async (blob: Blob) => {
+    setIsTranscribing(true);
+    try {
+      // For now, we're mocking the transcription service
+      // In a real app, you would send the blob to a service
+      
+      // Mock a small delay to simulate processing
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simulate a transcript result
+      const mockTranscript = "This is a simulated transcription of your voice recording.";
+      
+      // Call the provided callback with the audio blob and transcript
+      onRecordingComplete(blob, mockTranscript);
+      
+    } catch (error) {
+      console.error("Error transcribing audio:", error);
+      toast({
+        title: "Error",
+        description: "Failed to transcribe your recording.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -103,7 +131,7 @@ const VoiceRecorder = ({ onRecordingComplete }: VoiceRecorderProps) => {
         )}
         
         <div className="flex gap-4">
-          {!isRecording ? (
+          {!isRecording && !isTranscribing ? (
             <Button
               onClick={startRecording}
               size="lg"
@@ -111,7 +139,7 @@ const VoiceRecorder = ({ onRecordingComplete }: VoiceRecorderProps) => {
             >
               <Mic className="h-6 w-6" />
             </Button>
-          ) : (
+          ) : isRecording ? (
             <Button
               onClick={stopRecording}
               size="lg"
@@ -119,11 +147,23 @@ const VoiceRecorder = ({ onRecordingComplete }: VoiceRecorderProps) => {
             >
               <Square className="h-5 w-5" />
             </Button>
+          ) : (
+            <Button
+              disabled
+              size="lg"
+              className="rounded-full h-16 w-16 flex items-center justify-center"
+            >
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </Button>
           )}
         </div>
         
         {isRecording && (
           <div className="mt-4 text-sm text-gray-500">Recording... (tap square to stop)</div>
+        )}
+        
+        {isTranscribing && (
+          <div className="mt-4 text-sm text-gray-500">Transcribing your recording...</div>
         )}
       </Card>
       

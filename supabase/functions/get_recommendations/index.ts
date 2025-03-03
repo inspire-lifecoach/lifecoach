@@ -86,7 +86,7 @@ serve(async (req) => {
           id: '4',
           category: 'relationships',
           title: 'Relationship Dynamics',
-          description: `In relationships, your ${personalityType} type brings ${personalityType.includes('F') ? 'empathy and emotional support' : 'clarity and problem-solving'}. Focus on developing ${personalityType.includes('T') ? 'more patience with others' emotions' : 'more objective assessment of situations'} to enhance your relationships.`,
+          description: `In relationships, your ${personalityType} type brings ${personalityType.includes('F') ? 'empathy and emotional support' : 'clarity and problem-solving'}. Focus on developing ${personalityType.includes('T') ? 'more patience with others\' emotions' : 'more objective assessment of situations'} to enhance your relationships.`,
           resources: [
             { title: 'Understanding Personality in Relationships', url: 'https://example.com/relationships', type: 'book' },
             { title: 'Communication Styles for Different Types', url: 'https://example.com/communication', type: 'article' }

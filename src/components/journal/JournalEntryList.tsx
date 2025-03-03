@@ -6,26 +6,25 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronUp, Volume2, RefreshCw } from "lucide-react";
-import JournalAnalysis from "./JournalAnalysis";
 
 interface JournalEntry {
   id: string;
   content: string;
   created_at: string;
-  mood: string;
+  mood: string | null;
   entry_type: 'text' | 'voice';
-  audio_url?: string;
+  audio_url?: string | null;
 }
 
 interface JournalEntryListProps {
   entries: JournalEntry[];
   isLoading: boolean;
+  onEntryClick: (entry: JournalEntry) => void;
   onRefresh: () => void;
 }
 
-const JournalEntryList = ({ entries, isLoading, onRefresh }: JournalEntryListProps) => {
+const JournalEntryList = ({ entries, isLoading, onEntryClick, onRefresh }: JournalEntryListProps) => {
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
-  const [showAnalysis, setShowAnalysis] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
     if (expandedEntryId === id) {
@@ -35,24 +34,20 @@ const JournalEntryList = ({ entries, isLoading, onRefresh }: JournalEntryListPro
     }
   };
 
-  const toggleAnalysis = (id: string) => {
-    if (showAnalysis === id) {
-      setShowAnalysis(null);
-    } else {
-      setShowAnalysis(id);
-    }
-  };
-
-  const getMoodColor = (mood: string) => {
+  const getMoodColor = (mood: string | null) => {
     switch (mood?.toLowerCase()) {
-      case 'positive':
+      case 'happy':
         return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'negative':
-        return 'bg-red-100 text-red-800 hover:bg-red-200';
-      case 'mixed':
-        return 'bg-purple-100 text-purple-800 hover:bg-purple-200';
-      default:
+      case 'sad':
         return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      case 'excited':
+        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+      case 'nervous':
+        return 'bg-purple-100 text-purple-800 hover:bg-purple-200';
+      case 'angry':
+        return 'bg-red-100 text-red-800 hover:bg-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
     }
   };
 
@@ -151,15 +146,11 @@ const JournalEntryList = ({ entries, isLoading, onRefresh }: JournalEntryListPro
             <Button
               variant="outline"
               size="sm"
-              onClick={() => toggleAnalysis(entry.id)}
+              onClick={() => onEntryClick(entry)}
             >
-              {showAnalysis === entry.id ? 'Hide Analysis' : 'Show Analysis'}
+              View Analysis
             </Button>
           </CardFooter>
-          
-          {showAnalysis === entry.id && (
-            <JournalAnalysis entryId={entry.id} />
-          )}
         </Card>
       ))}
     </div>
