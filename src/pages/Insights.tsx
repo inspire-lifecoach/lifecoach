@@ -11,7 +11,7 @@ const personalityInsights = [
   {
     id: 1,
     title: 'Communication Style',
-    content: 'You tend to communicate in a direct and logical manner. You prefer facts and clear information over emotional appeals. In group settings, you may sometimes appear reserved, but when discussing topics you're knowledgeable about, you become much more engaged and articulate.',
+    content: 'You tend to communicate in a direct and logical manner. You prefer facts and clear information over emotional appeals. In group settings, you may sometimes appear reserved, but when discussing topics you\'re knowledgeable about, you become much more engaged and articulate.',
     category: 'relationships'
   },
   {
