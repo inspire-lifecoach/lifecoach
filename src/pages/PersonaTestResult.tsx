@@ -111,7 +111,7 @@ const enneagramDescriptions: Record<string, PersonalityDescription> = {
   '7': {
     type: 'Type 7',
     name: 'The Enthusiast',
-    description: 'Spontaneous, versatile, and optimistic. You seek diverse experiences and maintain a busy, fun-filled schedule to avoid missing out on life's adventures.',
+    description: 'Spontaneous, versatile, and optimistic. You seek diverse experiences and maintain a busy, fun-filled schedule to avoid missing out on life\'s adventures.',
     strengths: ['Optimistic', 'Versatile', 'Adventurous', 'Productive', 'Joyful'],
     weaknesses: ['Scattered', 'Impulsive', 'Commitment-phobic', 'Escapist'],
     careers: ['Entrepreneur', 'Marketer', 'Travel Writer', 'Event Planner', 'Consultant']
@@ -320,7 +320,7 @@ const PersonaTestResult = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not load detailed insights. Using basic information instead.",
+        description: "Could not load detailed insights. Using basic information instead."
       });
     } finally {
       setIsLoading(false);

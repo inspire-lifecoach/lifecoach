@@ -50,13 +50,15 @@ serve(async (req) => {
       );
     }
 
+    console.log(`Processing ${testType} test with ${responses.length} responses for user ${userId}`);
+
     // Process different test types
     let result: AnalyzeTestResult;
     
     if (testType === 'mbti' || testType === 'quick') {
       result = analyzeMBTI(responses);
     } else if (testType === 'big5') {
-      result = analyzeBigFive(responses);
+      result = analyzeBig5(responses);
     } else if (testType === 'enneagram') {
       result = analyzeEnneagram(responses);
     } else {
@@ -66,6 +68,8 @@ serve(async (req) => {
       );
     }
 
+    console.log(`Test result calculated: ${result.personalityType}`);
+
     // Save test result to database
     const { data: test, error: testQueryError } = await supabase
       .from('tests')
@@ -74,6 +78,7 @@ serve(async (req) => {
       .single();
     
     if (testQueryError && testQueryError.code !== 'PGRST116') { // PGRST116 is "No rows returned"
+      console.error('Error querying for test:', testQueryError);
       throw testQueryError;
     }
     
@@ -88,10 +93,15 @@ serve(async (req) => {
         .select()
         .single();
         
-      if (testError) throw testError;
+      if (testError) {
+        console.error('Error creating test:', testError);
+        throw testError;
+      }
       testId = newTest.id;
+      console.log(`Created new test with ID ${testId}`);
     } else {
       testId = test.id;
+      console.log(`Found existing test with ID ${testId}`);
     }
 
     // Save user's test result
@@ -107,7 +117,12 @@ serve(async (req) => {
         }
       });
       
-    if (resultError) throw resultError;
+    if (resultError) {
+      console.error('Error saving test result:', resultError);
+      throw resultError;
+    }
+    
+    console.log(`Saved test result for user ${userId}`);
     
     // Update the user's profile with their personality type if it's MBTI
     if (testType === 'mbti') {
@@ -116,7 +131,11 @@ serve(async (req) => {
         .update({ personality_type: result.personalityType })
         .eq('id', userId);
         
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+        throw profileError;
+      }
+      console.log(`Updated user profile with personality type ${result.personalityType}`);
     }
 
     return new Response(
@@ -199,7 +218,7 @@ function analyzeMBTI(responses: TestResponse[]): AnalyzeTestResult {
   };
 }
 
-function analyzeBigFive(responses: TestResponse[]): AnalyzeTestResult {
+function analyzeBig5(responses: TestResponse[]): AnalyzeTestResult {
   // Initialize scores for each dimension
   const dimensionScores = {
     O: 0, // Openness
