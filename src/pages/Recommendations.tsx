@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -7,16 +6,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 
+interface Resource {
+  title: string;
+  url: string;
+  type: 'book' | 'article' | 'video' | 'course';
+}
+
 interface Recommendation {
   id: string;
   category: string;
   title: string;
   description: string;
-  resources?: {
-    title: string;
-    url: string;
-    type: 'book' | 'article' | 'video' | 'course';
-  }[];
+  resources?: Resource[];
+  user_id?: string;
+  created_at?: string;
+  type?: string;
 }
 
 const Recommendations = () => {
@@ -45,7 +49,20 @@ const Recommendations = () => {
           throw new Error(response.error.message);
         }
 
-        setRecommendations(response.data?.recommendations || []);
+        // Ensure the response data is properly typed
+        const typedRecommendations = response.data?.recommendations?.map((rec: any) => ({
+          id: rec.id,
+          category: rec.category,
+          title: rec.title,
+          description: rec.description,
+          resources: Array.isArray(rec.resources) ? rec.resources.map((resource: any) => ({
+            title: resource.title,
+            url: resource.url,
+            type: resource.type as 'book' | 'article' | 'video' | 'course'
+          })) : undefined
+        })) || [];
+
+        setRecommendations(typedRecommendations);
       } catch (error) {
         console.error('Error fetching recommendations:', error);
         toast({

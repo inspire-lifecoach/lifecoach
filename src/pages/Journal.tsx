@@ -19,6 +19,7 @@ interface JournalEntry {
   mood: string;
   entry_type: 'text' | 'voice';
   audio_url?: string;
+  user_id: string;
 }
 
 const Journal = () => {
@@ -49,7 +50,13 @@ const Journal = () => {
         throw error;
       }
 
-      setEntries(data || []);
+      // We need to ensure the entry_type is either 'text' or 'voice'
+      const typedEntries = data?.map(entry => ({
+        ...entry,
+        entry_type: entry.entry_type as 'text' | 'voice'
+      })) || [];
+      
+      setEntries(typedEntries);
     } catch (error) {
       console.error("Error fetching journal entries:", error);
       toast({
