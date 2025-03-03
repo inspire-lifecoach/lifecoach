@@ -1,36 +1,39 @@
-
-import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { Mic, Send, Loader2 } from "lucide-react";
-import JournalEntryList from "@/components/journal/JournalEntryList";
-import VoiceRecorder from "@/components/journal/VoiceRecorder";
-import { formatDistanceToNow } from "date-fns";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import JournalEntryList from '@/components/journal/JournalEntryList';
+import JournalAnalysis from '@/components/journal/JournalAnalysis';
+import VoiceRecorder from '@/components/journal/VoiceRecorder';
 
-interface JournalEntry {
+export interface JournalEntry {
   id: string;
   content: string;
   created_at: string;
-  mood: string;
-  entry_type: 'text' | 'voice';
-  audio_url?: string;
+  mood: string | null;
+  entry_type: string;
+  audio_url: string | null;
   user_id: string;
 }
 
 const Journal = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [journalContent, setJournalContent] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState("text");
+  const [content, setContent] = useState('');
+  const [mood, setMood] = useState('neutral');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('write');
+  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
+  const { toast } = useToast();
+  const { user } = useAuth();
 
+  // Fetch journal entries on component mount
   useEffect(() => {
     if (user) {
       fetchEntries();
@@ -38,119 +41,130 @@ const Journal = () => {
   }, [user]);
 
   const fetchEntries = async () => {
+    if (!user) return;
+    
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from("journal_entries")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (error) {
-        throw error;
-      }
-
-      // We need to ensure the entry_type is either 'text' or 'voice'
-      const typedEntries = data?.map(entry => ({
-        ...entry,
-        entry_type: entry.entry_type as 'text' | 'voice'
-      })) || [];
-      
-      setEntries(typedEntries);
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      setEntries(data || []);
     } catch (error) {
-      console.error("Error fetching journal entries:", error);
+      console.error('Error fetching journal entries:', error);
       toast({
-        title: "Error",
-        description: "Failed to load journal entries",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to load your journal entries.",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSubmitTextEntry = async () => {
-    if (!journalContent.trim()) return;
-    
+  const handleSubmit = async () => {
+    if (!user) return;
+
     setIsSubmitting(true);
     try {
-      // Call our edge function
-      const response = await fetch(`${window.location.origin}/api/journal_operations/create-entry`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        },
-        body: JSON.stringify({ content: journalContent })
-      });
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .insert({
+          content,
+          mood,
+          user_id: user.id,
+          entry_type: 'text'
+        })
+        .select()
+        .single();
 
-      if (!response.ok) {
-        throw new Error("Failed to create journal entry");
-      }
+      if (error) throw error;
 
-      const newEntry = await response.json();
-      
-      setEntries(prev => [newEntry, ...prev]);
-      setJournalContent("");
+      // Refresh entries list
+      fetchEntries();
+
+      // Clear form
+      setContent('');
+      setMood('neutral');
+      setActiveTab('list');
+
       toast({
-        title: "Success",
-        description: "Journal entry saved",
+        title: "Journal Entry Saved",
+        description: "Your journal entry has been successfully saved.",
       });
     } catch (error) {
-      console.error("Error creating journal entry:", error);
+      console.error('Error saving journal entry:', error);
       toast({
-        title: "Error",
-        description: "Failed to save journal entry",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to save your journal entry.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleVoiceEntry = async (audioBlob: Blob) => {
+  const handleEntryClick = (entry: JournalEntry) => {
+    setSelectedEntry(entry);
+    setActiveTab('analysis');
+  };
+
+  const handleClearSelection = () => {
+    setSelectedEntry(null);
+    setActiveTab('list');
+  };
+
+  const handleVoiceEntryComplete = async (audioBlob: Blob, transcript: string) => {
+    if (!user) return;
+    
     setIsSubmitting(true);
     try {
-      // Create form data with the audio file
-      const formData = new FormData();
-      formData.append("audio_file", audioBlob, "recording.webm");
+      // Upload audio file to storage
+      const fileName = `voice-entry-${Date.now()}.webm`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('journal_audio')
+        .upload(fileName, audioBlob);
+        
+      if (uploadError) throw uploadError;
       
-      // Call our edge function
-      const response = await fetch(`${window.location.origin}/api/process_voice_journal`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to process voice journal");
-      }
-
-      const result = await response.json();
+      // Get the URL for the uploaded file
+      const { data: urlData } = await supabase.storage
+        .from('journal_audio')
+        .getPublicUrl(fileName);
+        
+      const audioUrl = urlData?.publicUrl;
       
-      // Add the new entry to the list
-      const newEntry: JournalEntry = {
-        id: result.entry.id,
-        content: result.entry.content,
-        created_at: result.entry.date,
-        mood: result.entry.mood,
-        entry_type: 'voice',
-        audio_url: result.entry.audio_url
-      };
+      // Create the journal entry with the voice transcript and audio URL
+      const { data: entryData, error: entryError } = await supabase
+        .from('journal_entries')
+        .insert({
+          content: transcript,
+          mood: 'neutral', // Default mood for voice entries
+          entry_type: 'voice',
+          audio_url: audioUrl,
+          user_id: user.id
+        })
+        .select()
+        .single();
+        
+      if (entryError) throw entryError;
       
-      setEntries(prev => [newEntry, ...prev]);
+      // Refresh entries list
+      fetchEntries();
+      
       toast({
-        title: "Success",
-        description: "Voice journal processed and saved",
+        title: "Voice Entry Saved",
+        description: "Your voice journal entry has been recorded and transcribed.",
       });
     } catch (error) {
-      console.error("Error processing voice journal:", error);
+      console.error('Error saving voice entry:', error);
       toast({
-        title: "Error",
-        description: "Failed to process voice journal",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to save your voice entry.",
       });
     } finally {
       setIsSubmitting(false);
@@ -159,75 +173,83 @@ const Journal = () => {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8">Personal Journal</h1>
-      
-      <div className="grid gap-8 md:grid-cols-[1fr_2fr]">
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>New Entry</CardTitle>
-              <CardDescription>Record your thoughts and reflections</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full mb-4">
-                  <TabsTrigger value="text" className="flex-1">Text</TabsTrigger>
-                  <TabsTrigger value="voice" className="flex-1">Voice</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="text">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 text-center">Journal</h1>
+
+        <Tabs defaultValue="write" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-3">
+            <TabsTrigger value="write">Write Entry</TabsTrigger>
+            <TabsTrigger value="list">View Entries</TabsTrigger>
+            <TabsTrigger value="analysis" disabled={!selectedEntry}>Analysis</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="write" className="mt-6 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Create New Entry</CardTitle>
+                <CardDescription>Write down your thoughts and feelings</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="entry">Entry</Label>
                   <Textarea 
-                    placeholder="What's on your mind today?"
-                    value={journalContent}
-                    onChange={(e) => setJournalContent(e.target.value)}
-                    className="min-h-[200px]"
+                    id="entry"
+                    placeholder="Write your journal entry here..."
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
                   />
-                </TabsContent>
+                </div>
                 
-                <TabsContent value="voice">
-                  <VoiceRecorder onRecordingComplete={handleVoiceEntry} />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-            <CardFooter>
-              {activeTab === "text" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="mood">Mood</Label>
+                  <Select value={mood} onValueChange={setMood}>
+                    <SelectTrigger id="mood">
+                      <SelectValue placeholder="Select a mood" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="happy">Happy</SelectItem>
+                      <SelectItem value="sad">Sad</SelectItem>
+                      <SelectItem value="excited">Excited</SelectItem>
+                      <SelectItem value="nervous">Nervous</SelectItem>
+                      <SelectItem value="angry">Angry</SelectItem>
+                      <SelectItem value="neutral">Neutral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+              <CardFooter>
                 <Button 
-                  onClick={handleSubmitTextEntry} 
-                  disabled={isSubmitting || !journalContent.trim()}
-                  className="w-full"
+                  className="ml-auto"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !content}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Save Entry
-                    </>
-                  )}
+                  {isSubmitting ? 'Submitting...' : 'Save Entry'}
                 </Button>
-              )}
-            </CardFooter>
-          </Card>
-        </div>
-        
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Journal Entries</CardTitle>
-              <CardDescription>Review your past entries</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <JournalEntryList 
-                entries={entries} 
-                isLoading={isLoading} 
-                onRefresh={fetchEntries}
+              </CardFooter>
+            </Card>
+            
+            <VoiceRecorder onVoiceEntryComplete={handleVoiceEntryComplete} isSubmitting={isSubmitting} />
+          </TabsContent>
+          
+          <TabsContent value="list" className="mt-6">
+            <JournalEntryList 
+              entries={entries}
+              isLoading={isLoading}
+              onEntryClick={handleEntryClick}
+            />
+          </TabsContent>
+          
+          <TabsContent value="analysis" className="mt-6">
+            {selectedEntry ? (
+              <JournalAnalysis 
+                entry={selectedEntry}
+                onClearSelection={handleClearSelection}
               />
-            </CardContent>
-          </Card>
-        </div>
+            ) : (
+              <p>No entry selected. Please select an entry to view its analysis.</p>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

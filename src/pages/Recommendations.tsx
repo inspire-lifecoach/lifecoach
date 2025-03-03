@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -29,87 +30,156 @@ const Recommendations = () => {
   const { toast } = useToast();
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [headerText, setHeaderText] = useState('Personalized Recommendations');
 
   const personalityType = location.state?.personalityType || 'Unknown';
+  const testType = location.state?.testType || 'mbti';
 
   useEffect(() => {
-    const fetchRecommendations = async () => {
-      setIsLoading(true);
-
-      try {
-        // Call the get_recommendations function
-        const response = await supabase.functions.invoke('get_recommendations', {
-          body: { 
-            personalityType,
-            categories: ['career', 'relationships', 'personal_growth', 'learning']
-          }
-        });
-
-        if (response.error) {
-          throw new Error(response.error.message);
-        }
-
-        // Ensure the response data is properly typed
-        const typedRecommendations = response.data?.recommendations?.map((rec: any) => ({
-          id: rec.id,
-          category: rec.category,
-          title: rec.title,
-          description: rec.description,
-          resources: Array.isArray(rec.resources) ? rec.resources.map((resource: any) => ({
-            title: resource.title,
-            url: resource.url,
-            type: resource.type as 'book' | 'article' | 'video' | 'course'
-          })) : undefined
-        })) || [];
-
-        setRecommendations(typedRecommendations);
-      } catch (error) {
-        console.error('Error fetching recommendations:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Could not load recommendations. Please try again later.",
-        });
-        // Set sample data if the API call fails
-        setRecommendations([
-          {
-            id: '1',
-            category: 'career',
-            title: 'Career Development Pathways',
-            description: `Based on your ${personalityType} personality type, consider exploring careers that allow for strategic thinking and independence. Look for roles where your analytical abilities can be fully utilized.`,
-            resources: [
-              { title: 'Strategic Career Planning', url: '#', type: 'book' },
-              { title: 'Finding Your Professional Niche', url: '#', type: 'course' }
-            ]
-          },
-          {
-            id: '2',
-            category: 'personal_growth',
-            title: 'Personal Development Focus Areas',
-            description: 'Consider working on emotional intelligence to balance your logical approach. Developing better communication skills can help you connect with others more effectively.',
-            resources: [
-              { title: 'Emotional Intelligence for Analytical Minds', url: '#', type: 'book' },
-              { title: 'Building Meaningful Connections', url: '#', type: 'article' }
-            ]
-          },
-          {
-            id: '3',
-            category: 'learning',
-            title: 'Learning Style Optimization',
-            description: 'Your personality type tends to excel with conceptual learning. Consider structured learning environments that still allow for independent exploration of topics.',
-            resources: [
-              { title: 'Advanced Learning Techniques', url: '#', type: 'course' },
-              { title: 'The Science of Effective Study', url: '#', type: 'video' }
-            ]
-          }
-        ]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    // Set header text based on test type
+    switch (testType) {
+      case 'big5':
+        setHeaderText('OCEAN Profile Recommendations');
+        break;
+      case 'enneagram':
+        setHeaderText('Enneagram Recommendations');
+        break;
+      default:
+        setHeaderText('Personalized Recommendations');
+    }
 
     fetchRecommendations();
-  }, [personalityType, toast]);
+  }, [personalityType, testType, toast]);
+
+  const fetchRecommendations = async () => {
+    setIsLoading(true);
+
+    try {
+      // Call the get_recommendations function
+      const response = await supabase.functions.invoke('get_recommendations', {
+        body: { 
+          personalityType,
+          testType,
+          categories: ['career', 'relationships', 'personal_growth', 'learning']
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      // Ensure the response data is properly typed
+      const typedRecommendations = response.data?.recommendations?.map((rec: any) => ({
+        id: rec.id,
+        category: rec.category,
+        title: rec.title,
+        description: rec.description,
+        resources: Array.isArray(rec.resources) ? rec.resources.map((resource: any) => ({
+          title: resource.title,
+          url: resource.url,
+          type: resource.type as 'book' | 'article' | 'video' | 'course'
+        })) : undefined
+      })) || [];
+
+      setRecommendations(typedRecommendations);
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not load recommendations. Please try again later.",
+      });
+      // Set sample data if the API call fails
+      setSampleRecommendations();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const setSampleRecommendations = () => {
+    // Create appropriate sample recommendations based on test type
+    if (testType === 'big5') {
+      setRecommendations([
+        {
+          id: '1',
+          category: 'personal_growth',
+          title: 'Developing Your Strengths',
+          description: `Based on your OCEAN profile, focusing on your strongest traits while working on areas of improvement can lead to greater personal satisfaction.`,
+          resources: [
+            { title: 'The Big Five Personality Traits Explained', url: '#', type: 'article' },
+            { title: 'Personality Development Strategies', url: '#', type: 'course' }
+          ]
+        },
+        {
+          id: '2',
+          category: 'career',
+          title: 'Career Alignment Strategies',
+          description: 'Finding a career that aligns with your personality traits can lead to greater job satisfaction and success.',
+          resources: [
+            { title: 'Finding Your Ideal Career Path', url: '#', type: 'book' },
+            { title: 'Personality-Based Career Coaching', url: '#', type: 'course' }
+          ]
+        }
+      ]);
+    } else if (testType === 'enneagram') {
+      setRecommendations([
+        {
+          id: '1',
+          category: 'personal_growth',
+          title: 'Growth Path for Your Type',
+          description: `The Enneagram offers specific growth paths for each type. For your type, focus on developing awareness of your core motivations and fears.`,
+          resources: [
+            { title: 'The Wisdom of the Enneagram', url: '#', type: 'book' },
+            { title: 'Personal Development Through the Enneagram', url: '#', type: 'course' }
+          ]
+        },
+        {
+          id: '2',
+          category: 'relationships',
+          title: 'Relationship Dynamics',
+          description: 'Understanding how your Enneagram type interacts with others can improve your relationships.',
+          resources: [
+            { title: 'The Enneagram in Relationships', url: '#', type: 'book' },
+            { title: 'Communication Strategies for Your Type', url: '#', type: 'video' }
+          ]
+        }
+      ]);
+    } else {
+      // Default MBTI recommendations
+      setRecommendations([
+        {
+          id: '1',
+          category: 'career',
+          title: 'Career Development Pathways',
+          description: `Based on your ${personalityType} personality type, consider exploring careers that allow for strategic thinking and independence. Look for roles where your analytical abilities can be fully utilized.`,
+          resources: [
+            { title: 'Strategic Career Planning', url: '#', type: 'book' },
+            { title: 'Finding Your Professional Niche', url: '#', type: 'course' }
+          ]
+        },
+        {
+          id: '2',
+          category: 'personal_growth',
+          title: 'Personal Development Focus Areas',
+          description: 'Consider working on emotional intelligence to balance your logical approach. Developing better communication skills can help you connect with others more effectively.',
+          resources: [
+            { title: 'Emotional Intelligence for Analytical Minds', url: '#', type: 'book' },
+            { title: 'Building Meaningful Connections', url: '#', type: 'article' }
+          ]
+        },
+        {
+          id: '3',
+          category: 'learning',
+          title: 'Learning Style Optimization',
+          description: 'Your personality type tends to excel with conceptual learning. Consider structured learning environments that still allow for independent exploration of topics.',
+          resources: [
+            { title: 'Advanced Learning Techniques', url: '#', type: 'course' },
+            { title: 'The Science of Effective Study', url: '#', type: 'video' }
+          ]
+        }
+      ]);
+    }
+  };
 
   const handleResourceClick = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -118,10 +188,13 @@ const Recommendations = () => {
   return (
     <div className="max-w-4xl mx-auto p-4 py-8">
       <h1 className="text-3xl font-bold mb-2 text-center bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600">
-        Personalized Recommendations
+        {headerText}
       </h1>
       <h2 className="text-xl mb-6 text-center text-muted-foreground">
-        For {personalityType} Personality Type
+        For {personalityType} 
+        {testType === 'mbti' && ' Personality Type'}
+        {testType === 'enneagram' && ' Enneagram Type'}
+        {testType === 'big5' && ' Profile'}
       </h2>
 
       {isLoading ? (
