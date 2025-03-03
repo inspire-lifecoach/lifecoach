@@ -1,150 +1,175 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface TestResponse {
+  questionId: string;
+  answer: string;
 }
 
-const AI_SERVICE_URL = "https://ai.inspirecreations.it.com/api/v1/persona/analyze-test"
+interface AnalyzeTestRequest {
+  userId: string;
+  testType: string;
+  responses: TestResponse[];
+}
+
+interface AnalyzeTestResult {
+  personalityType: string;
+  traits: {
+    dimension: string;
+    score: number;
+    preference: string;
+  }[];
+  description: string;
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // Parse request body
+    const requestData: AnalyzeTestRequest = await req.json();
+    const { userId, testType, responses } = requestData;
 
-    // Get JWT token from the authorization header
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Verify the token and get the user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
-    if (userError || !user) {
+    if (!userId || !testType || !responses || !Array.isArray(responses)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Get request data
-    const { testId, responses } = await req.json()
-    
-    // Validate request data
-    if (!testId || !responses || !Array.isArray(responses)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid request data' }),
+        JSON.stringify({ error: 'Invalid request data' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      );
     }
 
-    // Prepare request for AI service
-    const aiRequest = {
-      userId: user.id,
-      testId,
-      responses
-    }
+    // For this example, we'll mock the AI analysis for MBTI
+    // In a real implementation, you'd send this to your AI service
+    
+    // Simple calculation for demo purposes
+    const counts = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+    responses.forEach(response => {
+      if (response.answer in counts) {
+        counts[response.answer as keyof typeof counts]++;
+      }
+    });
+    
+    // Determine personality type
+    const personalityType = [
+      counts.E > counts.I ? 'E' : 'I',
+      counts.S > counts.N ? 'S' : 'N',
+      counts.T > counts.F ? 'T' : 'F',
+      counts.J > counts.P ? 'J' : 'P',
+    ].join('');
+    
+    // Calculate dimension scores (0-100)
+    const traits = [
+      {
+        dimension: 'Extraversion-Introversion',
+        score: Math.round((counts.E / (counts.E + counts.I)) * 100),
+        preference: counts.E > counts.I ? 'Extraversion' : 'Introversion'
+      },
+      {
+        dimension: 'Sensing-Intuition',
+        score: Math.round((counts.S / (counts.S + counts.N)) * 100),
+        preference: counts.S > counts.N ? 'Sensing' : 'Intuition'
+      },
+      {
+        dimension: 'Thinking-Feeling',
+        score: Math.round((counts.T / (counts.T + counts.F)) * 100),
+        preference: counts.T > counts.F ? 'Thinking' : 'Feeling'
+      },
+      {
+        dimension: 'Judging-Perceiving',
+        score: Math.round((counts.J / (counts.J + counts.P)) * 100),
+        preference: counts.J > counts.P ? 'Judging' : 'Perceiving'
+      }
+    ];
 
-    // Call AI service
-    let aiResponse
-    try {
-      console.log("Calling AI service:", AI_SERVICE_URL)
-      const response = await fetch(AI_SERVICE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(aiRequest)
+    // In a real implementation, you'd call your AI service like this:
+    /*
+    const aiResponse = await fetch('https://ai.inspirecreations.it.com/api/v1/persona/analyze-test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('AI_SERVICE_API_KEY')}`
+      },
+      body: JSON.stringify({
+        userId,
+        testType,
+        responses
       })
+    });
+    
+    const result = await aiResponse.json();
+    */
 
-      if (!response.ok) {
-        // If API is down, use sample data
-        console.log("AI service returned error status:", response.status)
-        const errorText = await response.text()
-        console.log("Error details:", errorText)
+    // Save test result to database
+    const { data: test } = await supabase
+      .from('tests')
+      .select('id')
+      .eq('type', testType)
+      .single();
+    
+    if (!test) {
+      // If test doesn't exist, create it
+      const { data: newTest, error: testError } = await supabase
+        .from('tests')
+        .insert({ type: testType, name: `${testType.toUpperCase()} Personality Test` })
+        .select()
+        .single();
         
-        // Use sample data
-        aiResponse = {
-          personalityType: "INFJ",
-          traits: [
-            { name: "Introversion", score: 78, description: "Tends to focus on internal thoughts and ideas" },
-            { name: "Intuition", score: 82, description: "Prefers abstract concepts and possibilities" },
-            { name: "Feeling", score: 65, description: "Makes decisions based on values and empathy" },
-            { name: "Judging", score: 70, description: "Prefers structure and planning" }
-          ],
-          analysisId: crypto.randomUUID()
-        }
-      } else {
-        aiResponse = await response.json()
-      }
-    } catch (error) {
-      console.error("Error calling AI service:", error)
-      // Use sample data when the API fails
-      aiResponse = {
-        personalityType: "ENFP",
-        traits: [
-          { name: "Extraversion", score: 68, description: "Energized by social interaction" },
-          { name: "Intuition", score: 75, description: "Focuses on patterns and possibilities" },
-          { name: "Feeling", score: 82, description: "Makes decisions based on values and emotions" },
-          { name: "Perceiving", score: 71, description: "Adaptable and spontaneous approach to life" }
-        ],
-        analysisId: crypto.randomUUID()
-      }
+      if (testError) throw testError;
+      test = newTest;
     }
 
-    // Store the result in the database
-    const { error: saveError } = await supabase
+    // Save user's test result
+    const { error: resultError } = await supabase
       .from('user_test_results')
-      .upsert({
-        user_id: user.id,
-        test_id: testId,
-        result: aiResponse.personalityType,
-        result_details: aiResponse
-      })
-
-    if (saveError) {
-      console.error("Error saving test result:", saveError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to save result' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Update user's personality type in their profile
+      .insert({
+        user_id: userId,
+        test_id: test.id,
+        result: personalityType,
+        result_details: {
+          traits,
+          responses
+        }
+      });
+      
+    if (resultError) throw resultError;
+    
+    // Update the user's profile with their personality type
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ personality_type: aiResponse.personalityType })
-      .eq('id', user.id)
+      .update({ personality_type: personalityType })
+      .eq('id', userId);
+      
+    if (profileError) throw profileError;
 
-    if (profileError) {
-      console.error("Error updating profile:", profileError)
-    }
+    // Create the result object
+    const result: AnalyzeTestResult = {
+      personalityType,
+      traits,
+      description: `You are an ${personalityType} type, which means you tend to be ${traits[0].preference}, ${traits[1].preference}, ${traits[2].preference}, and ${traits[3].preference}.`
+    };
 
     return new Response(
-      JSON.stringify(aiResponse),
+      JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   } catch (error) {
-    console.error("Unexpected error:", error)
+    console.error('Error processing test analysis:', error);
+    
     return new Response(
-      JSON.stringify({ error: 'An unexpected error occurred' }),
+      JSON.stringify({ error: 'Failed to analyze test' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   }
-})
+});

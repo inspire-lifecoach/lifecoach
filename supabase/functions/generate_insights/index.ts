@@ -1,179 +1,101 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
-const AI_SERVICE_URL = "https://ai.inspirecreations.it.com/api/v1/persona/generate-insights"
+interface GenerateInsightsRequest {
+  personalityType: string;
+  userId?: string;
+  areas?: string[];
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // Parse request body
+    const requestData: GenerateInsightsRequest = await req.json();
+    const { personalityType, userId, areas = ['career', 'relationships', 'personal_growth'] } = requestData;
 
-    // Get JWT token from the authorization header
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Verify the token and get the user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
-    if (userError || !user) {
+    if (!personalityType) {
       return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Get request data
-    const { analysisId, areas } = await req.json()
-    
-    // Validate request data
-    if (!analysisId) {
-      return new Response(
-        JSON.stringify({ error: 'analysisId is required' }),
+        JSON.stringify({ error: 'Personality type is required' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      );
     }
 
-    // Prepare request for AI service
-    const aiRequest = {
-      userId: user.id,
-      analysisId,
-      areas: areas || ['career', 'relationships', 'personal_growth']
-    }
+    // In a real implementation, you'd call your AI service here
+    // const aiResponse = await fetch('https://ai.inspirecreations.it.com/api/v1/persona/generate-insights', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'Authorization': `Bearer ${Deno.env.get('AI_SERVICE_API_KEY')}`
+    //   },
+    //   body: JSON.stringify({ personalityType, userId, areas })
+    // });
+    
+    // const result = await aiResponse.json();
 
-    // Call AI service
-    let aiResponse
-    try {
-      console.log("Calling AI service:", AI_SERVICE_URL)
-      const response = await fetch(AI_SERVICE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+    // Mock insights for demonstration
+    const mockInsights = {
+      personalityType,
+      timestamp: new Date().toISOString(),
+      insights: [
+        {
+          category: 'career',
+          title: 'Career Development',
+          content: `As a ${personalityType}, you thrive in environments that allow for ${personalityType.includes('I') ? 'independent work' : 'collaborative work'} and ${personalityType.includes('N') ? 'creative problem-solving' : 'practical application'}. Consider roles that leverage your ${personalityType.includes('T') ? 'analytical thinking' : 'people skills'} and ${personalityType.includes('J') ? 'organizational abilities' : 'adaptability'}.`
         },
-        body: JSON.stringify(aiRequest)
-      })
-
-      if (!response.ok) {
-        console.log("AI service returned error status:", response.status)
-        const errorText = await response.text()
-        console.log("Error details:", errorText)
-        
-        // Use sample insights data
-        aiResponse = {
-          insights: [
-            {
-              category: "career",
-              title: "Ideal Work Environment",
-              content: "As an INFJ, you thrive in environments that allow for deep focus and meaningful work. Consider roles that involve helping others, counseling, or creative pursuits where you can express your vision.",
-              relevanceScore: 0.92
-            },
-            {
-              category: "relationships",
-              title: "Communication Style",
-              content: "Your natural empathy makes you an excellent listener, but you may need to work on expressing your own needs more directly. Try to balance your tendency to accommodate others with healthy boundaries.",
-              relevanceScore: 0.87
-            },
-            {
-              category: "personal_growth",
-              title: "Stress Management",
-              content: "Under stress, you may become overwhelmed by others' emotions. Regular solitude and reflective practices like journaling or meditation will help you maintain your emotional balance.",
-              relevanceScore: 0.95
-            }
-          ],
-          timestamp: new Date().toISOString()
+        {
+          category: 'relationships',
+          title: 'Relationship Dynamics',
+          content: `In relationships, your ${personalityType.includes('F') ? 'empathetic nature' : 'logical approach'} can be a strength, but remember to balance it with ${personalityType.includes('F') ? 'setting healthy boundaries' : 'emotional awareness'}. You connect best with people who appreciate your ${personalityType.includes('I') ? 'thoughtful communication' : 'energetic presence'} and respect your need for ${personalityType.includes('J') ? 'structure' : 'spontaneity'}.`
+        },
+        {
+          category: 'personal_growth',
+          title: 'Personal Development',
+          content: `For continued growth, focus on developing your ${personalityType.includes('S') ? 'big-picture thinking' : 'attention to detail'} and practice ${personalityType.includes('T') ? 'emotional intelligence' : 'objective analysis'} in challenging situations. Your ${personalityType.includes('P') ? 'flexibility' : 'determination'} is a valuable asset that can help you achieve meaningful goals.`
         }
-      } else {
-        aiResponse = await response.json()
-      }
-    } catch (error) {
-      console.error("Error calling AI service:", error)
-      // Use sample data when API fails
-      aiResponse = {
-        insights: [
-          {
-            category: "career",
-            title: "Leadership Potential",
-            content: "As an ENFP, your natural charisma and ability to inspire others makes you well-suited for leadership roles that involve innovation and team building.",
-            relevanceScore: 0.89
-          },
-          {
-            category: "relationships",
-            title: "Connection Patterns",
-            content: "You form deep connections quickly but may struggle with long-term consistency. Focus on balancing your enthusiasm for new relationships with nurturing existing ones.",
-            relevanceScore: 0.91
-          },
-          {
-            category: "personal_growth",
-            title: "Focus Development",
-            content: "Your creativity flourishes when you can channel it productively. Consider implementing structured systems to help you follow through on your many ideas.",
-            relevanceScore: 0.94
-          }
-        ],
-        timestamp: new Date().toISOString()
-      }
-    }
+      ]
+    };
 
-    // Store insights in the database
-    for (const insight of aiResponse.insights) {
-      const { error: insertError } = await supabase
-        .from('insights')
-        .insert({
-          personality_type: await getPersonalityType(supabase, user.id),
-          category: insight.category,
-          title: insight.title,
-          content: insight.content
-        })
-
-      if (insertError) {
-        console.error("Error saving insight:", insertError)
+    // Save insights to database if userId is provided
+    if (userId) {
+      for (const insight of mockInsights.insights) {
+        const { error } = await supabase
+          .from('insights')
+          .insert({
+            personality_type: personalityType,
+            category: insight.category,
+            title: insight.title,
+            content: insight.content
+          });
+          
+        if (error) console.error('Error saving insight:', error);
       }
     }
 
     return new Response(
-      JSON.stringify(aiResponse),
+      JSON.stringify(mockInsights),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   } catch (error) {
-    console.error("Unexpected error:", error)
+    console.error('Error generating insights:', error);
+    
     return new Response(
-      JSON.stringify({ error: 'An unexpected error occurred' }),
+      JSON.stringify({ error: 'Failed to generate insights' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   }
-})
-
-// Helper function to get personality type
-async function getPersonalityType(supabase, userId) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('personality_type')
-    .eq('id', userId)
-    .single()
-
-  if (error || !data) {
-    console.error("Error fetching personality type:", error)
-    return "UNKNOWN"
-  }
-
-  return data.personality_type || "UNKNOWN"
-}
+});
