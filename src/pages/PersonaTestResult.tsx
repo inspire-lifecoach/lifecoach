@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -46,7 +45,7 @@ const personalityDescriptions: Record<string, PersonalityDescription> = {
   'DEFAULT': {
     type: 'Your Personality Type',
     name: 'Unique Individual',
-    description: 'Your personality type reflects a unique combination of traits that influence how you interact with the world. Your specific strengths and preferences give you a particular perspective that's valuable in many contexts.',
+    description: "Your personality type reflects a unique combination of traits that influence how you interact with the world. Your specific strengths and preferences give you a particular perspective that is valuable in many contexts.",
     strengths: ['Unique combination of traits', 'Individual perspective', 'Personal growth potential'],
     weaknesses: ['Areas for development unique to your type'],
     careers: ['Careers aligned with your preferences and strengths']
