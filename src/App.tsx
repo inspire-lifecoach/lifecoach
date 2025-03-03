@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import Journal from "./pages/Journal";
 import PersonaTest from "./pages/PersonaTest";
 import PersonaTestResult from "./pages/PersonaTestResult";
+import Recommendations from "./pages/Recommendations";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/journal" element={<Journal />} />
           <Route path="/persona-test" element={<PersonaTest />} />
           <Route path="/test-result/:personalityType" element={<PersonaTestResult />} />
+          <Route path="/recommendations" element={<Recommendations />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

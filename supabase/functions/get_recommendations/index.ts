@@ -1,188 +1,132 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
-const AI_SERVICE_URL = "https://ai.inspirecreations.it.com/api/v1/persona/recommendations"
+interface GetRecommendationsRequest {
+  personalityType: string;
+  userId?: string;
+  categories?: string[];
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    // Parse request body
+    const requestData: GetRecommendationsRequest = await req.json();
+    const { personalityType, userId, categories = ['career', 'personal_growth', 'relationships', 'learning'] } = requestData;
+
+    if (!personalityType) {
       return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ error: 'Personality type is required' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Get JWT token from the authorization header
-    const token = authHeader.replace('Bearer ', '')
+    // In a real implementation, you'd call your AI service here
+    // const aiResponse = await fetch('https://ai.inspirecreations.it.com/api/v1/persona/recommendations', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'Authorization': `Bearer ${Deno.env.get('AI_SERVICE_API_KEY')}`
+    //   },
+    //   body: JSON.stringify({ personalityType, userId, categories })
+    // });
     
-    // Verify the token and get the user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // const result = await aiResponse.json();
 
-    // Get user's personality type
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('personality_type')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profileData) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to get user profile' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const personalityType = profileData.personality_type || "UNKNOWN"
-    
-    // Get request data
-    const { context } = await req.json()
-    
-    // Prepare request for AI service
-    const aiRequest = {
-      userId: user.id,
+    // Mock recommendations for demonstration
+    const mockRecommendations = {
       personalityType,
-      context
-    }
-
-    // Call AI service
-    let aiResponse
-    try {
-      console.log("Calling AI service:", AI_SERVICE_URL)
-      const response = await fetch(AI_SERVICE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      timestamp: new Date().toISOString(),
+      recommendations: [
+        {
+          id: '1',
+          category: 'career',
+          title: 'Career Development Pathways',
+          description: `Based on your ${personalityType} personality type, consider exploring careers that allow for ${personalityType.includes('I') ? 'deep focus and independent work' : 'collaboration and social interaction'}. Look for roles where your ${personalityType.includes('N') ? 'vision and creativity' : 'practical skills and attention to detail'} can be fully utilized.`,
+          resources: [
+            { title: 'Strategic Career Planning', url: 'https://example.com/career', type: 'book' },
+            { title: 'Finding Your Professional Niche', url: 'https://example.com/niche', type: 'course' }
+          ]
         },
-        body: JSON.stringify(aiRequest)
-      })
-
-      if (!response.ok) {
-        console.log("AI service returned error status:", response.status)
-        const errorText = await response.text()
-        console.log("Error details:", errorText)
-        
-        // Use sample recommendations data
-        aiResponse = {
-          recommendations: [
-            {
-              type: "career",
-              title: "Counseling and Therapy",
-              description: "Fields that allow you to provide meaningful guidance and emotional support to others.",
-              resources: [
-                { title: "Introduction to Counseling Psychology", type: "book", url: "https://example.com/counseling" },
-                { title: "Empathic Listening Skills Workshop", type: "course", url: "https://example.com/listening" }
-              ]
-            },
-            {
-              type: "relationship",
-              title: "Quality Over Quantity",
-              description: "Focus on nurturing a few deep relationships rather than maintaining many surface-level connections.",
-              resources: [
-                { title: "Meaningful Connections", type: "book", url: "https://example.com/connections" },
-                { title: "Authentic Relationship Building", type: "workshop", url: "https://example.com/authentic" }
-              ]
-            },
-            {
-              type: "self-improvement",
-              title: "Mindfulness Practices",
-              description: "Regular meditation and reflection to help process emotions and reduce overwhelm.",
-              resources: [
-                { title: "Mindfulness for Sensitive Types", type: "course", url: "https://example.com/mindfulness" },
-                { title: "Daily Reflection Journal", type: "tool", url: "https://example.com/journal" }
-              ]
-            }
+        {
+          id: '2',
+          category: 'personal_growth',
+          title: 'Personal Development Focus Areas',
+          description: `Consider working on ${personalityType.includes('T') ? 'emotional intelligence to balance your logical approach' : 'analytical skills to complement your emotional intelligence'}. Developing better ${personalityType.includes('E') ? 'listening skills' : 'self-expression skills'} can help you connect with others more effectively.`,
+          resources: [
+            { title: `${personalityType.includes('T') ? 'Emotional Intelligence for Analytical Minds' : 'Structured Thinking for Empathetic People'}`, url: 'https://example.com/eq', type: 'book' },
+            { title: 'Building Meaningful Connections', url: 'https://example.com/connections', type: 'article' }
+          ]
+        },
+        {
+          id: '3',
+          category: 'learning',
+          title: 'Learning Style Optimization',
+          description: `Your personality type tends to excel with ${personalityType.includes('N') ? 'conceptual learning' : 'practical, hands-on learning'}. Consider ${personalityType.includes('J') ? 'structured learning environments' : 'flexible learning environments'} that still allow for ${personalityType.includes('P') ? 'exploration of topics' : 'clear objectives and outcomes'}.`,
+          resources: [
+            { title: 'Advanced Learning Techniques', url: 'https://example.com/learning', type: 'course' },
+            { title: 'The Science of Effective Study', url: 'https://example.com/study', type: 'video' }
+          ]
+        },
+        {
+          id: '4',
+          category: 'relationships',
+          title: 'Relationship Dynamics',
+          description: `In relationships, your ${personalityType} type brings ${personalityType.includes('F') ? 'empathy and emotional support' : 'clarity and problem-solving'}. Focus on developing ${personalityType.includes('T') ? 'more patience with others' emotions' : 'more objective assessment of situations'} to enhance your relationships.`,
+          resources: [
+            { title: 'Understanding Personality in Relationships', url: 'https://example.com/relationships', type: 'book' },
+            { title: 'Communication Styles for Different Types', url: 'https://example.com/communication', type: 'article' }
           ]
         }
-      } else {
-        aiResponse = await response.json()
-      }
-    } catch (error) {
-      console.error("Error calling AI service:", error)
-      // Use sample data when API fails
-      aiResponse = {
-        recommendations: [
-          {
-            type: "career",
-            title: "Creative Leadership",
-            description: "Roles that allow you to inspire teams and implement innovative ideas.",
-            resources: [
-              { title: "Creative Leadership: Transforming the Way We Lead", type: "book", url: "https://example.com/creative-leadership" },
-              { title: "Innovation Management Course", type: "course", url: "https://example.com/innovation" }
-            ]
-          },
-          {
-            type: "relationship",
-            title: "Authentic Communication",
-            description: "Developing deeper connections through honest and vulnerable communication.",
-            resources: [
-              { title: "Radical Honesty", type: "book", url: "https://example.com/honesty" },
-              { title: "Authentic Relating Workshop", type: "workshop", url: "https://example.com/authentic-relating" }
-            ]
-          },
-          {
-            type: "self-improvement",
-            title: "Structured Creativity",
-            description: "Systems to help channel your creative energy into completed projects.",
-            resources: [
-              { title: "Getting Things Done for Creative Minds", type: "course", url: "https://example.com/gtd-creative" },
-              { title: "Project Completion Planner", type: "tool", url: "https://example.com/project-planner" }
-            ]
-          }
-        ]
-      }
-    }
+      ]
+    };
 
-    // Store recommendations in the database
-    for (const rec of aiResponse.recommendations) {
-      const { error: insertError } = await supabase
-        .from('recommendations')
-        .insert({
-          user_id: user.id,
-          type: rec.type,
-          title: rec.title,
-          description: rec.description,
-          resources: rec.resources
-        })
+    // Filter recommendations by requested categories
+    mockRecommendations.recommendations = mockRecommendations.recommendations.filter(
+      rec => categories.includes(rec.category)
+    );
 
-      if (insertError) {
-        console.error("Error saving recommendation:", insertError)
+    // Save recommendations to database if userId is provided
+    if (userId) {
+      for (const recommendation of mockRecommendations.recommendations) {
+        const { error } = await supabase
+          .from('recommendations')
+          .insert({
+            user_id: userId,
+            type: recommendation.category,
+            title: recommendation.title,
+            description: recommendation.description,
+            resources: recommendation.resources
+          });
+          
+        if (error) console.error('Error saving recommendation:', error);
       }
     }
 
     return new Response(
-      JSON.stringify(aiResponse),
+      JSON.stringify(mockRecommendations),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   } catch (error) {
-    console.error("Unexpected error:", error)
+    console.error('Error generating recommendations:', error);
+    
     return new Response(
-      JSON.stringify({ error: 'An unexpected error occurred' }),
+      JSON.stringify({ error: 'Failed to generate recommendations' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   }
-})
+});
