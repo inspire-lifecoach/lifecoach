@@ -1,16 +1,27 @@
 
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, ClipboardList, BookHeart, LineChart, ArrowLeft } from "lucide-react";
+import { 
+  Home, 
+  ClipboardList, 
+  BookHeart, 
+  LineChart, 
+  ArrowLeft, 
+  User, 
+  LogIn,
+  LayoutDashboard
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   
   // Check if we're on a page that needs a back button
   const showBackButton = 
-    !['/', '/tests', '/insights', '/journal', '/recommendations'].includes(location.pathname);
+    !['/', '/tests', '/insights', '/journal', '/recommendations', '/auth', '/dashboard', '/profile'].includes(location.pathname);
 
   return (
     <nav className="w-full py-4 px-4 sm:px-6 border-b">
@@ -68,6 +79,35 @@ const Navigation = () => {
           >
             <LineChart className="h-5 w-5" />
           </Button>
+          {user ? (
+            <>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/dashboard')}
+                aria-label="Dashboard"
+              >
+                <LayoutDashboard className="h-5 w-5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/profile')}
+                aria-label="Profile"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            </>
+          ) : (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/auth')}
+              aria-label="Login"
+            >
+              <LogIn className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
     </nav>

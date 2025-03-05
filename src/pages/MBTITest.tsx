@@ -1,264 +1,209 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useTestResults } from "@/hooks/useTests";
-import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/components/ui/use-toast";
 
-// Sample questions for MBTI test
+// Sample MBTI questions
 const questions = [
   {
     id: 1,
-    text: "At a party, you:",
+    text: "When meeting new people, you typically:",
     options: [
-      { value: "E", text: "Interact with many, including strangers" },
-      { value: "I", text: "Interact with a few, known to you" }
-    ]
+      { value: "E", text: "Initiate conversations and introduce yourself" },
+      { value: "I", text: "Wait for others to approach you" }
+    ],
+    category: "EI" // Extraversion vs. Introversion
   },
   {
     id: 2,
-    text: "You are more:",
+    text: "When solving problems, you prefer to:",
     options: [
-      { value: "S", text: "Realistic than speculative" },
-      { value: "N", text: "Speculative than realistic" }
-    ]
+      { value: "S", text: "Focus on concrete facts and details" },
+      { value: "N", text: "Think about abstract concepts and possibilities" }
+    ],
+    category: "SN" // Sensing vs. Intuition
   },
   {
     id: 3,
-    text: "Is it worse to:",
+    text: "When making decisions, you tend to:",
     options: [
-      { value: "T", text: "Have your head in the clouds" },
-      { value: "F", text: "Be in a rut" }
-    ]
+      { value: "T", text: "Analyze objectively and consider logical consequences" },
+      { value: "F", text: "Consider people's feelings and values" }
+    ],
+    category: "TF" // Thinking vs. Feeling
   },
   {
     id: 4,
-    text: "You are more impressed by:",
+    text: "When planning your day, you typically:",
     options: [
-      { value: "T", text: "Principles" },
-      { value: "F", text: "Emotions" }
-    ]
+      { value: "J", text: "Create a schedule and prefer to stick to it" },
+      { value: "P", text: "Keep your options open and adapt as needed" }
+    ],
+    category: "JP" // Judging vs. Perceiving
   },
   {
     id: 5,
-    text: "You are drawn more to:",
+    text: "When reading a book, you pay more attention to:",
     options: [
-      { value: "J", text: "The structured and scheduled" },
-      { value: "P", text: "The unstructured and unplanned" }
-    ]
+      { value: "S", text: "Specific details and what actually happens" },
+      { value: "N", text: "The meaning behind events and what could happen" }
+    ],
+    category: "SN"
   },
   {
     id: 6,
-    text: "You prefer to work:",
+    text: "In a group discussion, you tend to:",
     options: [
-      { value: "J", text: "To deadlines" },
-      { value: "P", text: "Just whenever" }
-    ]
+      { value: "E", text: "Speak up frequently and think out loud" },
+      { value: "I", text: "Listen more than you speak and process internally" }
+    ],
+    category: "EI"
   },
   {
     id: 7,
-    text: "You tend to choose:",
+    text: "When giving feedback, you typically:",
     options: [
-      { value: "S", text: "Carefully" },
-      { value: "N", text: "Impulsively" }
-    ]
+      { value: "T", text: "Focus on being honest and direct, even if it might hurt feelings" },
+      { value: "F", text: "Focus on being tactful and supportive, even if you have to soften the truth" }
+    ],
+    category: "TF"
   },
   {
     id: 8,
-    text: "At parties, you generally:",
+    text: "When starting a project, you prefer to:",
     options: [
-      { value: "E", text: "Stay late, with increasing energy" },
-      { value: "I", text: "Leave early, with decreased energy" }
-    ]
-  },
-  {
-    id: 9,
-    text: "You are more attracted to:",
-    options: [
-      { value: "S", text: "Sensible people" },
-      { value: "N", text: "Creative people" }
-    ]
-  },
-  {
-    id: 10,
-    text: "You are more interested in:",
-    options: [
-      { value: "S", text: "What is actual" },
-      { value: "N", text: "What is possible" }
-    ]
-  },
-  {
-    id: 11,
-    text: "In judging others, you are more swayed by:",
-    options: [
-      { value: "T", text: "Laws than circumstances" },
-      { value: "F", text: "Circumstances than laws" }
-    ]
-  },
-  {
-    id: 12,
-    text: "In approaching others, you are usually more:",
-    options: [
-      { value: "J", text: "Deliberate than spontaneous" },
-      { value: "P", text: "Spontaneous than deliberate" }
-    ]
+      { value: "J", text: "Plan everything in advance with clear milestones" },
+      { value: "P", text: "Figure things out as you go and adjust your approach" }
+    ],
+    category: "JP"
   }
 ];
 
 const MBTITest = () => {
   const navigate = useNavigate();
-  const { saveResult } = useTestResults();
+  const { toast } = useToast();
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<{ [key: number]: string }>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const handleAnswer = (value: string) => {
-    setAnswers({ ...answers, [currentQuestion]: value });
-  };
-  
-  const goToNextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+
+  const handleNext = () => {
+    if (selectedOption) {
+      // Save answer
+      setAnswers({
+        ...answers,
+        [currentQuestion]: selectedOption
+      });
+      
+      // Move to next question or finish
+      if (currentQuestion < questions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+        setSelectedOption(null); // Clear selection for next question
+      } else {
+        // Calculate result
+        const result = calculateResult();
+        navigate(`/test-result/mbti/${result}`);
+      }
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Please select an answer",
+        description: "You must select an option to continue.",
+      });
     }
   };
-  
-  const goToPreviousQuestion = () => {
+
+  const handlePrevious = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
+      setSelectedOption(answers[currentQuestion - 1] || null);
     }
   };
-  
-  const calculateResults = () => {
-    const counts = {
+
+  const calculateResult = () => {
+    const scores = {
       E: 0, I: 0,
       S: 0, N: 0,
       T: 0, F: 0,
       J: 0, P: 0
     };
     
-    Object.values(answers).forEach(answer => {
-      counts[answer as keyof typeof counts]++;
-    });
-    
-    const result = [
-      counts.E > counts.I ? 'E' : 'I',
-      counts.S > counts.N ? 'S' : 'N',
-      counts.T > counts.F ? 'T' : 'F',
-      counts.J > counts.P ? 'J' : 'P'
-    ].join('');
-    
-    return result;
-  };
-  
-  const handleSubmit = async () => {
-    if (Object.keys(answers).length < questions.length) {
-      toast.error("Please answer all questions before submitting.");
-      return;
-    }
-    
-    setIsSubmitting(true);
-    const mbtiResult = calculateResults();
-    
-    // Find the test id for MBTI
-    const testId = "d2d94fed-4a40-45b4-a9f6-aa3fa2167ad5"; // This should be fetched from the database or API
-    
-    await saveResult(testId, mbtiResult, {
-      answers,
-      letterCounts: {
-        E: answers ? Object.values(answers).filter(a => a === 'E').length : 0,
-        I: answers ? Object.values(answers).filter(a => a === 'I').length : 0,
-        S: answers ? Object.values(answers).filter(a => a === 'S').length : 0,
-        N: answers ? Object.values(answers).filter(a => a === 'N').length : 0,
-        T: answers ? Object.values(answers).filter(a => a === 'T').length : 0,
-        F: answers ? Object.values(answers).filter(a => a === 'F').length : 0,
-        J: answers ? Object.values(answers).filter(a => a === 'J').length : 0,
-        P: answers ? Object.values(answers).filter(a => a === 'P').length : 0,
+    // Count answers for each dimension
+    Object.values(answers).forEach((answer) => {
+      if (answer in scores) {
+        scores[answer as keyof typeof scores]++;
       }
     });
     
-    setIsSubmitting(false);
-    navigate("/tests/mbti/result");
+    // Determine type for each dimension
+    const E_I = scores.E > scores.I ? 'E' : 'I';
+    const S_N = scores.S > scores.N ? 'S' : 'N';
+    const T_F = scores.T > scores.F ? 'T' : 'F';
+    const J_P = scores.J > scores.P ? 'J' : 'P';
+    
+    // Combine to form MBTI type
+    return E_I + S_N + T_F + J_P;
   };
-  
-  const progress = ((Object.keys(answers).length) / questions.length) * 100;
+
+  const progress = ((currentQuestion + 1) / questions.length) * 100;
+  const question = questions[currentQuestion];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 py-8 px-4">
+    <div className="container mx-auto py-8 px-4">
       <div className="max-w-3xl mx-auto">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate("/tests")}
-          className="mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Tests
-        </Button>
-        
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600">
+            MBTI Personality Test
+          </h1>
+          <p className="text-center text-muted-foreground mt-2">
+            Discover your unique personality type
+          </p>
+        </div>
+
+        <div className="mb-8">
+          <div className="flex justify-between text-sm mb-2">
+            <span>Question {currentQuestion + 1} of {questions.length}</span>
+            <span>{Math.round(progress)}% complete</span>
+          </div>
+          <Progress value={progress} className="h-2" />
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle>Myers-Briggs Type Indicator (MBTI)</CardTitle>
-            <CardDescription>
-              Answer the following questions honestly based on your preferences and behaviors.
-            </CardDescription>
+            <CardTitle>Question {currentQuestion + 1}</CardTitle>
+            <CardDescription>{question.text}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Question {currentQuestion + 1} of {questions.length}</span>
-                <span>{Math.round(progress)}% complete</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-            
-            <div className="py-4">
-              <h3 className="text-xl font-medium mb-6">{questions[currentQuestion].text}</h3>
-              
-              <RadioGroup 
-                value={answers[currentQuestion] || ""}
-                onValueChange={handleAnswer}
-                className="space-y-4"
-              >
-                {questions[currentQuestion].options.map((option, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <RadioGroupItem value={option.value} id={`option-${index}`} />
-                    <Label htmlFor={`option-${index}`} className="text-base cursor-pointer">
-                      {option.text}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
+          <CardContent>
+            <RadioGroup 
+              value={selectedOption || ""} 
+              onValueChange={setSelectedOption}
+              className="space-y-4"
+            >
+              {question.options.map((option, index) => (
+                <div key={index} className="flex items-start space-x-2 p-3 border rounded-md hover:bg-muted">
+                  <RadioGroupItem value={option.value} id={`option-${index}`} />
+                  <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
+                    {option.text}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button 
               variant="outline" 
-              onClick={goToPreviousQuestion}
+              onClick={handlePrevious}
               disabled={currentQuestion === 0}
             >
               Previous
             </Button>
-            
-            {currentQuestion < questions.length - 1 ? (
-              <Button 
-                onClick={goToNextQuestion}
-                disabled={!answers[currentQuestion]}
-              >
-                Next
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleSubmit}
-                disabled={isSubmitting || Object.keys(answers).length < questions.length}
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </Button>
-            )}
+            <Button onClick={handleNext}>
+              {currentQuestion < questions.length - 1 ? "Next" : "See Results"}
+            </Button>
           </CardFooter>
         </Card>
       </div>
