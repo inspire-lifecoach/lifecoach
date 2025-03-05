@@ -53,7 +53,14 @@ const Journal = () => {
         .order('created_at', { ascending: false });
         
       if (error) throw error;
-      setEntries(data || []);
+      
+      // Transform the data to ensure entry_type is strictly 'text' or 'voice'
+      const typedEntries = data?.map(entry => ({
+        ...entry,
+        entry_type: (entry.entry_type === 'voice' ? 'voice' : 'text') as 'text' | 'voice'
+      })) || [];
+      
+      setEntries(typedEntries);
     } catch (error) {
       console.error('Error fetching journal entries:', error);
       toast({
