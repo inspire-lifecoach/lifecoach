@@ -240,7 +240,7 @@ function getMBTIDescription(type: string): string {
     'ENTP': 'The Debater: Quick-thinking, curious, and intellectually adaptable with a love for ideas.',
     'INFJ': 'The Advocate: Insightful, principled, and creative with a focus on helping others.',
     'INFP': 'The Mediator: Idealistic, empathetic, and creative with strong personal values.',
-    'ENFJ': 'The Protagonist: Charismatic, inspiring, and empathetic, focused on others' growth.',
+    'ENFJ': 'The Protagonist: Charismatic, inspiring, and empathetic, focused on others\' growth.',
     'ENFP': 'The Campaigner: Enthusiastic, creative, and people-oriented with a love for possibilities.',
     'ISTJ': 'The Logistician: Practical, fact-minded, and reliable with a strong sense of duty.',
     'ISFJ': 'The Defender: Dedicated, warm, and protective with a desire to serve others.',
