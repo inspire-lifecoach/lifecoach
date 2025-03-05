@@ -32,6 +32,11 @@ const personalityTests = [
 const Tests = () => {
   const navigate = useNavigate();
 
+  const handleTestClick = (path: string) => {
+    console.log("Navigating to:", path);
+    navigate(path);
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -61,7 +66,7 @@ const Tests = () => {
                 </CardContent>
                 <CardFooter>
                   <Button 
-                    onClick={() => navigate(test.path)}
+                    onClick={() => handleTestClick(test.path)}
                     className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
                   >
                     Take this test
@@ -83,7 +88,7 @@ const Tests = () => {
                 </CardContent>
                 <CardFooter>
                   <Button 
-                    onClick={() => navigate(test.path)}
+                    onClick={() => handleTestClick(test.path)}
                     className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
                   >
                     Take this test
@@ -104,7 +109,7 @@ const Tests = () => {
               </CardContent>
               <CardFooter>
                 <Button 
-                  onClick={() => navigate('/persona-test?quick=true')}
+                  onClick={() => handleTestClick('/persona-test?quick=true')}
                   className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
                 >
                   Take this test
