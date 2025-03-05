@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import Journal from "./pages/Journal";
 import PersonaTest from "./pages/PersonaTest";
 import PersonaTestResult from "./pages/PersonaTestResult";
+import TestResult from "./pages/TestResult";
 import Recommendations from "./pages/Recommendations";
 import Tests from "./pages/Tests";
 import Insights from "./pages/Insights";
@@ -25,7 +26,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/persona-test" element={<PersonaTest />} />
-          <Route path="/test-result/:personalityType" element={<PersonaTestResult />} />
+          <Route path="/test-result/:personalityType" element={<TestResult />} />
           <Route path="/recommendations" element={<Recommendations />} />
           <Route path="/tests" element={<Tests />} />
           <Route path="/insights" element={<Insights />} />
