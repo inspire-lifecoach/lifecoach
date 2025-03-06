@@ -1,441 +1,231 @@
 
-import { useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useProfile } from "@/hooks/useProfile";
-import { useTestResults } from "@/hooks/useTests";
-import { Button } from "@/components/ui/button";
+import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { useNavigate } from "react-router-dom";
-import { CalendarIcon, BookOpenIcon, BarChart3Icon, ScrollTextIcon } from "lucide-react";
+import { ArrowRight, BookOpen, LineChart, BrainCircuit, MessageSquare } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { useTestResults } from '@/hooks/useTests';
+import { useProfile } from '@/hooks/useProfile';
+import AdvisorInsight from '@/components/AdvisorInsight';
+import ProgressBar from '@/components/ProgressBar';
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
-  const { results, loading: resultsLoading } = useTestResults();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { profile } = useProfile();
+  const { results, loading } = useTestResults();
+
+  // Get latest test result
+  const latestResult = results.length > 0 ? results[0] : null;
   
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  // Calculate test stats
+  const completedTests = new Set(results.map(r => r.test?.type));
+  const totalTests = 4; // MBTI, Big Five, Enneagram, Persona
+  const completedCount = completedTests.size;
+  const completionPercentage = (completedCount / totalTests) * 100;
+
+  // Generate advisor insights based on user data
+  const insights = [
+    {
+      title: "Reflect on your communication style",
+      description: profile?.personality_type?.includes('E') 
+        ? "As an extrovert, you gain energy from social interactions. Try to be mindful of giving others space to share their thoughts in conversations."
+        : "As an introvert, you process information internally. Consider sharing your thoughts more often with others to avoid misunderstandings.",
+      type: 'reflection' as const,
+      source: 'test-result' as const
+    },
+    {
+      title: "Practice mindfulness daily",
+      description: "Taking just 5 minutes each day to practice mindfulness can help reduce stress and improve your focus. Try incorporating this into your morning routine.",
+      type: 'suggestion' as const,
+      source: 'interaction' as const
+    },
+    {
+      title: "Express your emotions more openly",
+      description: "Your journal entries indicate you tend to internalize your feelings. Challenge yourself to express emotions more directly with trusted friends or family.",
+      type: 'challenge' as const,
+      source: 'journal' as const
+    }
+  ];
+
+  if (!user) {
+    navigate('/auth');
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Welcome, {profile?.full_name || user?.email}</h1>
-            <p className="text-gray-600 mt-1">
-              {profile?.personality_type 
-                ? `Your personality type: ${profile.personality_type}` 
-                : "Take a test to discover your personality type"}
-            </p>
-          </div>
-          <div className="flex gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/profile")}
-            >
-              Edit Profile
-            </Button>
-            <Button 
-              variant="ghost" 
-              onClick={() => signOut()}
-            >
-              Sign Out
-            </Button>
-          </div>
+    <div className="container mx-auto py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold">Welcome, {profile?.full_name || 'Friend'}</h1>
+          <p className="text-muted-foreground mt-1">
+            Your personal growth assistant is here to help you understand yourself better
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center">
+                <BookOpen className="mr-2 h-5 w-5 text-indigo-500" />
+                Journal Entries
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pb-2">
+              <div className="text-3xl font-bold">3</div>
+              <p className="text-sm text-muted-foreground">Entries this week</p>
+            </CardContent>
+            <CardFooter>
+              <Button variant="ghost" className="w-full" onClick={() => navigate('/journal')}>
+                Write today's entry
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center">
+                <BrainCircuit className="mr-2 h-5 w-5 text-violet-500" />
+                Personality Tests
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pb-2">
+              <div className="text-3xl font-bold">{completedCount}/{totalTests}</div>
+              <ProgressBar value={completionPercentage} className="mt-2" />
+            </CardContent>
+            <CardFooter>
+              <Button variant="ghost" className="w-full" onClick={() => navigate('/tests')}>
+                Take next test
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center">
+                <LineChart className="mr-2 h-5 w-5 text-cyan-500" />
+                Insights Generated
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pb-2">
+              <div className="text-3xl font-bold">7</div>
+              <p className="text-sm text-muted-foreground">Based on your activities</p>
+            </CardContent>
+            <CardFooter>
+              <Button variant="ghost" className="w-full" onClick={() => navigate('/insights')}>
+                View insights
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid grid-cols-4 mb-8">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="tests">Tests</TabsTrigger>
-            <TabsTrigger value="insights">Insights</TabsTrigger>
-            <TabsTrigger value="progress">Progress</TabsTrigger>
+        <Tabs defaultValue="advisor" className="mb-8">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="advisor">Advisor Insights</TabsTrigger>
+            <TabsTrigger value="personality">Your Personality</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="overview">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center">
-                    <BookOpenIcon className="h-5 w-5 mr-2 text-violet-500" />
-                    Personality Profile
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {profileLoading ? (
-                    <div className="h-24 flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-violet-500"></div>
-                    </div>
-                  ) : profile?.personality_type ? (
-                    <div>
-                      <p className="text-2xl font-semibold text-center my-4">{profile.personality_type}</p>
-                      <p className="text-gray-600 text-sm">{profile.bio || "Add a bio to your profile to describe yourself."}</p>
-                    </div>
-                  ) : (
-                    <div className="h-24 flex flex-col items-center justify-center gap-2">
-                      <p className="text-gray-600 text-center">No personality type yet</p>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => navigate("/tests")}
-                      >
-                        Take a test
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center">
-                    <ScrollTextIcon className="h-5 w-5 mr-2 text-violet-500" />
-                    Recent Tests
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {resultsLoading ? (
-                    <div className="h-24 flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-violet-500"></div>
-                    </div>
-                  ) : results.length > 0 ? (
-                    <ul className="space-y-2">
-                      {results.slice(0, 3).map((result) => (
-                        <li key={result.id} className="text-sm">
-                          <div className="font-medium">{result.test?.name}: {result.result}</div>
-                          <div className="text-gray-500 text-xs">{formatDate(result.created_at)}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="h-24 flex flex-col items-center justify-center gap-2">
-                      <p className="text-gray-600 text-center">No tests taken yet</p>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => navigate("/tests")}
-                      >
-                        Take your first test
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center">
-                    <BarChart3Icon className="h-5 w-5 mr-2 text-violet-500" />
-                    Suggested Insights
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {profile?.personality_type ? (
-                    <ul className="space-y-2">
-                      <li className="text-sm">
-                        <div className="font-medium">Relationship Compatibility</div>
-                        <div className="text-gray-500 text-xs">Learn which types complement yours</div>
-                      </li>
-                      <li className="text-sm">
-                        <div className="font-medium">Career Guidance</div>
-                        <div className="text-gray-500 text-xs">Discover ideal careers for your type</div>
-                      </li>
-                      <li className="text-sm">
-                        <div className="font-medium">Communication Style</div>
-                        <div className="text-gray-500 text-xs">Tips for effective interactions</div>
-                      </li>
-                    </ul>
-                  ) : (
-                    <div className="h-24 flex items-center justify-center text-gray-600 text-center">
-                      Take a personality test to get personalized insights
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="pt-0">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => navigate("/insights")}
-                  >
-                    View All Insights
-                  </Button>
-                </CardFooter>
-              </Card>
+          <TabsContent value="advisor" className="mt-6 space-y-4">
+            {insights.map((insight, index) => (
+              <AdvisorInsight
+                key={index}
+                title={insight.title}
+                description={insight.description}
+                type={insight.type}
+                source={insight.source}
+              />
+            ))}
+            <div className="text-center mt-6">
+              <Button onClick={() => navigate('/insights')}>
+                View All Insights
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             </div>
           </TabsContent>
-          
-          <TabsContent value="tests">
+          <TabsContent value="personality" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Personality Tests</CardTitle>
+                <CardTitle>Your Personality Profile</CardTitle>
                 <CardDescription>
-                  Discover different aspects of your personality through our scientifically designed assessments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Myers-Briggs Type Indicator</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600">
-                        Discover your preferences in how you perceive the world and make decisions
-                      </p>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => navigate("/tests/mbti")}
-                      >
-                        Start Test
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Big Five</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600">
-                        Measure your personality across five core dimensions
-                      </p>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => navigate("/tests/big-five")}
-                      >
-                        Start Test
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Enneagram</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600">
-                        Identify your core personality type among nine interconnected types
-                      </p>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => navigate("/tests/enneagram")}
-                      >
-                        Start Test
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="insights">
-            <Card>
-              <CardHeader>
-                <CardTitle>Personalized Insights</CardTitle>
-                <CardDescription>
-                  Understand yourself better with insights tailored to your personality type
+                  {profile?.personality_type 
+                    ? `Your primary personality type is ${profile.personality_type}`
+                    : "Take a personality test to discover your type"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {profile?.personality_type ? (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-4">Relationships</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-md">Communication Style</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-gray-600">
-                              Learn how your personality type influences your communication style and get tips for more effective interactions.
-                            </p>
-                          </CardContent>
-                          <CardFooter>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="w-full"
-                              onClick={() => navigate("/insights/relationships/communication")}
-                            >
-                              Read More
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                        
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-md">Compatibility</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-gray-600">
-                              Discover which personality types are most compatible with yours and why.
-                            </p>
-                          </CardContent>
-                          <CardFooter>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="w-full"
-                              onClick={() => navigate("/insights/relationships/compatibility")}
-                            >
-                              Read More
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                      </div>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
+                      <h3 className="font-semibold mb-2 flex items-center">
+                        <BrainCircuit className="mr-2 h-5 w-5 text-primary" />
+                        {profile.personality_type}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {profile.personality_type === 'INTJ' ? 
+                          "As an INTJ, you're a strategic thinker with a natural talent for analysis and planning. You value intelligence and competence, and tend to have high standards for yourself and others." :
+                          `Your ${profile.personality_type} type influences how you perceive the world and make decisions.`}
+                      </p>
                     </div>
                     
-                    <Separator />
-                    
                     <div>
-                      <h3 className="text-xl font-semibold mb-4">Career</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-md">Ideal Career Paths</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-gray-600">
-                              Explore career options that align with your natural strengths and preferences.
-                            </p>
-                          </CardContent>
-                          <CardFooter>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="w-full"
-                              onClick={() => navigate("/insights/career/paths")}
-                            >
-                              Read More
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                        
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-md">Work Environment</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-gray-600">
-                              Learn about the work environments and conditions where you're most likely to thrive.
-                            </p>
-                          </CardContent>
-                          <CardFooter>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="w-full"
-                              onClick={() => navigate("/insights/career/environment")}
-                            >
-                              Read More
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                      </div>
+                      <h4 className="font-medium mb-2">Key Strengths:</h4>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 pl-2">
+                        {profile.personality_type === 'INTJ' ? (
+                          <>
+                            <li>Strategic thinking and planning</li>
+                            <li>Independent problem solving</li>
+                            <li>Analytical mindset</li>
+                            <li>Ability to see the big picture</li>
+                          </>
+                        ) : (
+                          <>
+                            <li>Based on your personality type, you have unique strengths</li>
+                            <li>Complete more tests to get detailed insights</li>
+                          </>
+                        )}
+                      </ul>
                     </div>
                   </div>
                 ) : (
-                  <div className="h-48 flex flex-col items-center justify-center gap-4">
-                    <p className="text-gray-600 text-center">
-                      Take a personality test to unlock personalized insights
+                  <div className="text-center py-6">
+                    <p className="text-muted-foreground mb-4">
+                      Take a personality test to discover more about yourself
                     </p>
-                    <Button 
-                      onClick={() => navigate("/tests")}
-                    >
-                      Take a Test
+                    <Button onClick={() => navigate('/tests')}>
+                      Take a Personality Test
                     </Button>
                   </div>
                 )}
               </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="progress">
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Journey</CardTitle>
-                <CardDescription>
-                  Track your personal growth and development
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {results.length > 0 ? (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-4">Test History</h3>
-                      <div className="border rounded-lg overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Result</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {results.map((result) => (
-                              <tr key={result.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{result.test?.name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{result.result}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(result.created_at)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-xl font-semibold mb-4">Personal Growth Plan</h3>
-                      <Card>
-                        <CardContent className="pt-6">
-                          <p className="text-gray-600 mb-4">
-                            Based on your personality type, we've created a personalized growth plan to help you develop your strengths and manage your challenges.
-                          </p>
-                          <Button onClick={() => navigate("/growth-plan")}>
-                            View Growth Plan
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-48 flex flex-col items-center justify-center gap-4">
-                    <p className="text-gray-600 text-center">
-                      Take a personality test to start tracking your progress
-                    </p>
-                    <Button 
-                      onClick={() => navigate("/tests")}
-                    >
-                      Take a Test
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full" onClick={() => navigate('/profile')}>
+                  View Full Profile
+                </Button>
+              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
+
+        <div className="bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950/30 dark:to-violet-950/30 rounded-lg p-6 border border-indigo-100 dark:border-indigo-900/50">
+          <div className="flex items-start gap-4">
+            <div className="bg-white dark:bg-black/20 p-3 rounded-full">
+              <MessageSquare className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold mb-2">Talk with your personal advisor</h2>
+              <p className="text-muted-foreground mb-4">
+                Share your thoughts and get personalized guidance based on your personality type and journal entries
+              </p>
+              <Button className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700">
+                Start a conversation
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
