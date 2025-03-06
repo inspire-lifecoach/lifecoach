@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -436,6 +437,18 @@ const PersonaTest = () => {
       return;
     }
 
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Login required",
+        description: "You need to be logged in to save your test results. Your results will still be shown but won't be saved.",
+      });
+      // Calculate result but don't save it
+      const result = calculateResult();
+      navigate(`/test-result/${testType}/${result}`);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -445,7 +458,7 @@ const PersonaTest = () => {
       // Save test result using the analyze_test edge function
       const response = await supabase.functions.invoke('analyze_test', {
         body: {
-          userId: user?.id,
+          userId: user.id,
           testType: testType,
           responses: Object.entries(answers).map(([questionId, answer]) => ({
             questionId,
@@ -459,7 +472,7 @@ const PersonaTest = () => {
       }
 
       // Navigate to results page
-      navigate(`/test-result/${result}`, { 
+      navigate(`/test-result/${testType}/${result}`, { 
         state: { 
           personalityType: result,
           testType: testType,

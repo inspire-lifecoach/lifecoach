@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
-// Sample MBTI questions
 const questions = [
   {
     id: 1,
@@ -87,9 +87,11 @@ const questions = [
 const MBTITest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleNext = () => {
     if (selectedOption) {
@@ -104,9 +106,7 @@ const MBTITest = () => {
         setCurrentQuestion(currentQuestion + 1);
         setSelectedOption(null); // Clear selection for next question
       } else {
-        // Calculate result
-        const result = calculateResult();
-        navigate(`/test-result/mbti/${result}`);
+        handleSubmit();
       }
     } else {
       toast({
@@ -147,6 +147,62 @@ const MBTITest = () => {
     
     // Combine to form MBTI type
     return E_I + S_N + T_F + J_P;
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      // Calculate result
+      const result = calculateResult();
+
+      if (user) {
+        // Save test result using the analyze_test edge function
+        const response = await supabase.functions.invoke('analyze_test', {
+          body: {
+            userId: user.id,
+            testType: 'mbti',
+            responses: Object.entries(answers).map(([questionId, answer]) => ({
+              questionId,
+              answer
+            }))
+          }
+        });
+
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+
+        navigate(`/test-result/mbti/${result}`, { 
+          state: { 
+            personalityType: result,
+            testType: 'mbti',
+            details: response.data 
+          } 
+        });
+      } else {
+        toast({
+          title: "Login required to save results",
+          description: "Your results will be shown but not saved to your profile."
+        });
+        navigate(`/test-result/mbti/${result}`, { 
+          state: { 
+            personalityType: result,
+            testType: 'mbti'
+          } 
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting test:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "There was a problem submitting your test. Your results will still be shown.",
+      });
+      // Still navigate to results page even if saving failed
+      navigate(`/test-result/mbti/${calculateResult()}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const progress = ((currentQuestion + 1) / questions.length) * 100;
@@ -201,8 +257,11 @@ const MBTITest = () => {
             >
               Previous
             </Button>
-            <Button onClick={handleNext}>
-              {currentQuestion < questions.length - 1 ? "Next" : "See Results"}
+            <Button 
+              onClick={handleNext}
+              disabled={isSubmitting || !selectedOption}
+            >
+              {currentQuestion < questions.length - 1 ? "Next" : isSubmitting ? "Processing..." : "See Results"}
             </Button>
           </CardFooter>
         </Card>
