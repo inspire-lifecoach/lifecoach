@@ -2,20 +2,22 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, HeartHandshake, Sparkles, Brain } from "lucide-react";
+import { BookOpen, HeartHandshake, Sparkles, Brain, MessageCircle, Clock } from "lucide-react";
 
 interface AdvisorInsightProps {
   title: string;
   description: string;
   type: 'reflection' | 'suggestion' | 'challenge' | 'growth';
-  source?: 'journal' | 'test-result' | 'interaction';
+  source?: 'journal' | 'test-result' | 'interaction' | 'check-in';
+  date?: string;
 }
 
 const AdvisorInsight: React.FC<AdvisorInsightProps> = ({
   title,
   description,
   type,
-  source = 'interaction'
+  source = 'interaction',
+  date
 }) => {
   // Define type-specific styles and icons
   const typeConfig = {
@@ -43,12 +45,14 @@ const AdvisorInsight: React.FC<AdvisorInsightProps> = ({
 
   // Define source badges
   const sourceConfig = {
-    'journal': "Based on your journal",
-    'test-result': "Based on your personality",
-    'interaction': "Based on our conversation"
+    'journal': { text: "Based on your journal", icon: <BookOpen className="h-3 w-3 mr-1" /> },
+    'test-result': { text: "Based on your personality", icon: <Brain className="h-3 w-3 mr-1" /> },
+    'interaction': { text: "Based on our conversation", icon: <MessageCircle className="h-3 w-3 mr-1" /> },
+    'check-in': { text: "From your check-in", icon: <Clock className="h-3 w-3 mr-1" /> }
   };
 
   const { icon, badgeClass, label } = typeConfig[type];
+  const sourceInfo = sourceConfig[source];
 
   return (
     <Card className="border border-border/50 hover:shadow-md transition-shadow">
@@ -60,7 +64,11 @@ const AdvisorInsight: React.FC<AdvisorInsightProps> = ({
             </div>
             <div>
               <CardTitle className="text-lg">{title}</CardTitle>
-              <CardDescription>{sourceConfig[source]}</CardDescription>
+              <CardDescription className="flex items-center">
+                {sourceInfo.icon}
+                <span>{sourceInfo.text}</span>
+                {date && <span className="ml-1 text-xs">• {date}</span>}
+              </CardDescription>
             </div>
           </div>
           <Badge className={badgeClass}>{label}</Badge>
