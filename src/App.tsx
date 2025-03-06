@@ -19,6 +19,7 @@ import Auth from "./pages/Auth";
 import MBTITest from "./pages/MBTITest";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import Upgrade from "./pages/Upgrade";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/insights" element={<Insights />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/upgrade" element={<Upgrade />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

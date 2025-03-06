@@ -190,7 +190,10 @@ const Index = () => {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
+                <Button 
+                  className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+                  onClick={() => navigate("/upgrade")}
+                >
                   Upgrade Now
                 </Button>
               </CardFooter>
