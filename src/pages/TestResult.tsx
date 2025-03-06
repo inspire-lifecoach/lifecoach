@@ -1,21 +1,17 @@
-
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Share, Download, BookOpen } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import ProgressBar from "@/components/ProgressBar";
 
-// These components would be in separate files in a real application
-// Let's define the props for our components
 interface PersonalityDescriptionProps {
   personalityType: string;
   testType: string;
 }
 
 const PersonalityDescription = ({ personalityType, testType }: PersonalityDescriptionProps) => {
-  // This would be more detailed in a real application
   return (
     <div className="space-y-4">
       <h3 className="text-xl font-semibold">About {personalityType}</h3>
@@ -68,7 +64,6 @@ const getPersonalityTraits = (personalityType: string, testType: string) => {
       'ISFP': ['Gentle', 'Sensitive', 'Nurturing', 'Artistic', 'Peaceful', 'Warm', 'Adaptable', 'Present-focused'],
       'ESTP': ['Energetic', 'Action-oriented', 'Adaptable', 'Straightforward', 'Resourceful', 'Practical', 'Realistic', 'Spontaneous'],
       'ESFP': ['Enthusiastic', 'Friendly', 'Spontaneous', 'Energetic', 'Fun-loving', 'Cooperative', 'Practical', 'Present-oriented'],
-      // Default set of traits if nothing matches
       'default': ['Analytical', 'Creative', 'Practical', 'Independent', 'Adaptable', 'Communicative', 'Detail-oriented', 'Big-picture thinker']
     };
     return mbtiTraits[personalityType] || mbtiTraits['default'];
@@ -83,12 +78,10 @@ const getPersonalityTraits = (personalityType: string, testType: string) => {
       'Type 7': ['Enthusiastic', 'Versatile', 'Spontaneous', 'Productive', 'Optimistic', 'Scattered', 'Future-oriented', 'Adventurous'],
       'Type 8': ['Powerful', 'Decisive', 'Self-confident', 'Strong', 'Confrontational', 'Protective', 'Direct', 'Controlling'],
       'Type 9': ['Easygoing', 'Self-effacing', 'Accepting', 'Harmonious', 'Complacent', 'Reassuring', 'Agreeable', 'Peaceful'],
-      // Default set of traits if nothing matches
       'default': ['Introspective', 'Self-aware', 'Growth-oriented', 'Adaptive', 'Resilient', 'Intuitive', 'Responsive', 'Self-motivated']
     };
     return enneagramTraits[personalityType] || enneagramTraits['default'];
   } else {
-    // For Big Five or any other test type
     return ['Analytical', 'Creative', 'Practical', 'Independent', 'Adaptable', 'Communicative', 'Detail-oriented', 'Big-picture thinker'];
   }
 };
@@ -128,7 +121,6 @@ const getPersonalityDescription = (personalityType: string, testType: string) =>
     };
     return enneagramDescriptions[personalityType] || `Description for ${personalityType} not available.`;
   } else {
-    // For Big Five or any other test type
     return `Detailed description for ${personalityType} will appear here.`;
   }
 };
@@ -136,12 +128,11 @@ const getPersonalityDescription = (personalityType: string, testType: string) =>
 const TestResult = () => {
   const { testType = "", personalityType = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const formattedTestType = testType.charAt(0).toUpperCase() + testType.slice(1);
   
-  // Handle share functionality
   const handleShare = () => {
-    // In a real app, implement proper sharing
     navigator.clipboard.writeText(window.location.href);
     toast({
       title: "Link copied to clipboard",
@@ -149,16 +140,13 @@ const TestResult = () => {
     });
   };
   
-  // Handle download functionality
   const handleDownload = () => {
-    // In a real app, implement proper PDF generation
     toast({
       title: "Download started",
       description: "Your results are being prepared for download",
     });
   };
   
-  // Handle recommendations
   const handleRecommendations = () => {
     navigate("/recommendations");
   };
@@ -175,19 +163,19 @@ const TestResult = () => {
           Back to Test
         </Button>
         
-        <Card className="mb-6">
+        <Card className="mb-6 border-border/50 shadow-sm">
           <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div>
               <CardTitle className="text-2xl">{formattedTestType} Test Results</CardTitle>
-              <CardDescription>Your personality type is <span className="font-bold text-indigo-600 dark:text-indigo-400">{personalityType}</span></CardDescription>
+              <CardDescription>Your personality type is <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400">{personalityType}</span></CardDescription>
             </div>
             <div className="flex gap-2 mt-4 sm:mt-0">
-              <Button variant="outline" size="sm" onClick={handleShare}>
-                <Share className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={handleShare} className="gap-1.5">
+                <Share className="h-4 w-4" />
                 Share
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDownload}>
-                <Download className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5">
+                <Download className="h-4 w-4" />
                 Download
               </Button>
             </div>
@@ -195,39 +183,34 @@ const TestResult = () => {
           <CardContent className="space-y-8">
             <PersonalityDescription personalityType={personalityType} testType={testType} />
             
-            {/* Trait breakdown with visual indicators */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Trait Breakdown</h3>
               {testType === "mbti" && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Introversion (I)</span>
-                      <span>Extraversion (E)</span>
-                    </div>
-                    <Progress value={personalityType.includes("E") ? 75 : 25} className="h-2" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Sensing (S)</span>
-                      <span>Intuition (N)</span>
-                    </div>
-                    <Progress value={personalityType.includes("N") ? 75 : 25} className="h-2" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Thinking (T)</span>
-                      <span>Feeling (F)</span>
-                    </div>
-                    <Progress value={personalityType.includes("F") ? 75 : 25} className="h-2" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Judging (J)</span>
-                      <span>Perceiving (P)</span>
-                    </div>
-                    <Progress value={personalityType.includes("P") ? 75 : 25} className="h-2" />
-                  </div>
+                <div className="space-y-5">
+                  <ProgressBar 
+                    value={personalityType.includes("E") ? 75 : 25} 
+                    showLabels={true}
+                    leftLabel="Introversion (I)"
+                    rightLabel="Extraversion (E)"
+                  />
+                  <ProgressBar 
+                    value={personalityType.includes("N") ? 75 : 25} 
+                    showLabels={true}
+                    leftLabel="Sensing (S)"
+                    rightLabel="Intuition (N)"
+                  />
+                  <ProgressBar 
+                    value={personalityType.includes("F") ? 75 : 25} 
+                    showLabels={true}
+                    leftLabel="Thinking (T)"
+                    rightLabel="Feeling (F)"
+                  />
+                  <ProgressBar 
+                    value={personalityType.includes("P") ? 75 : 25} 
+                    showLabels={true}
+                    leftLabel="Judging (J)"
+                    rightLabel="Perceiving (P)"
+                  />
                 </div>
               )}
             </div>
@@ -235,14 +218,13 @@ const TestResult = () => {
             <PersonalityTraits personalityType={personalityType} testType={testType} />
           </CardContent>
           <CardFooter>
-            <Button onClick={handleRecommendations} className="w-full">
+            <Button onClick={handleRecommendations} className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
               <BookOpen className="mr-2 h-4 w-4" />
               Get Personalized Recommendations
             </Button>
           </CardFooter>
         </Card>
         
-        {/* Upgrade prompt */}
         <Card className="bg-gradient-to-r from-violet-100 to-indigo-100 dark:from-violet-900/40 dark:to-indigo-900/40 border-indigo-200 dark:border-indigo-800">
           <CardHeader>
             <CardTitle className="text-xl">Want more detailed insights?</CardTitle>

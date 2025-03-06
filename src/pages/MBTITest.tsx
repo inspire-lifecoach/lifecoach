@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
+import ProgressBar from "@/components/ProgressBar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -221,14 +222,16 @@ const MBTITest = () => {
         </div>
 
         <div className="mb-8">
-          <div className="flex justify-between text-sm mb-2">
-            <span>Question {currentQuestion + 1} of {questions.length}</span>
-            <span>{Math.round(progress)}% complete</span>
-          </div>
-          <Progress value={progress} className="h-2" />
+          <ProgressBar 
+            value={currentQuestion + 1} 
+            max={questions.length} 
+            showLabels={true}
+            leftLabel={`Question ${currentQuestion + 1} of ${questions.length}`}
+            rightLabel={`${Math.round(progress)}% complete`}
+          />
         </div>
 
-        <Card>
+        <Card className="border border-border/50 shadow-sm">
           <CardHeader>
             <CardTitle>Question {currentQuestion + 1}</CardTitle>
             <CardDescription>{question.text}</CardDescription>
@@ -240,7 +243,7 @@ const MBTITest = () => {
               className="space-y-4"
             >
               {question.options.map((option, index) => (
-                <div key={index} className="flex items-start space-x-2 p-3 border rounded-md hover:bg-muted">
+                <div key={index} className="flex items-start space-x-2 p-3 border rounded-md hover:bg-muted transition-colors">
                   <RadioGroupItem value={option.value} id={`option-${index}`} />
                   <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
                     {option.text}
@@ -260,6 +263,7 @@ const MBTITest = () => {
             <Button 
               onClick={handleNext}
               disabled={isSubmitting || !selectedOption}
+              className={`${currentQuestion < questions.length - 1 ? "" : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"}`}
             >
               {currentQuestion < questions.length - 1 ? "Next" : isSubmitting ? "Processing..." : "See Results"}
             </Button>
