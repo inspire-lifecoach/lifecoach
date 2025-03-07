@@ -9,6 +9,68 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      check_in_responses: {
+        Row: {
+          check_in_id: string
+          created_at: string
+          id: string
+          response: string
+          user_id: string
+        }
+        Insert: {
+          check_in_id: string
+          created_at?: string
+          id?: string
+          response: string
+          user_id: string
+        }
+        Update: {
+          check_in_id?: string
+          created_at?: string
+          id?: string
+          response?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_in_responses_check_in_id_fkey"
+            columns: ["check_in_id"]
+            isOneToOne: false
+            referencedRelation: "check_ins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      check_ins: {
+        Row: {
+          context: string
+          created_at: string
+          id: string
+          question: string
+          relevance_type: string
+          responded: boolean
+          user_id: string
+        }
+        Insert: {
+          context: string
+          created_at?: string
+          id?: string
+          question: string
+          relevance_type: string
+          responded?: boolean
+          user_id: string
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          id?: string
+          question?: string
+          relevance_type?: string
+          responded?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       insights: {
         Row: {
           category: string

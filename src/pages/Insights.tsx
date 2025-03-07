@@ -15,7 +15,7 @@ import { useCheckIns } from '@/hooks/useCheckIns';
 const Insights = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { insights, isLoading: insightsLoading } = useInsights(profile?.personality_type);
+  const { insights, loading: insightsLoading } = useInsights(profile?.personality_type);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("insights");
   const { 
@@ -52,7 +52,7 @@ const Insights = () => {
           check_in_id: checkInId,
           user_id: user.id,
           response
-        });
+        } as any);
       
       if (error) throw error;
       

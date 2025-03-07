@@ -36,7 +36,8 @@ export function useCheckIns() {
       
       if (error) throw error;
       
-      setCheckIns(data as CheckIn[]);
+      // Cast to CheckIn[] type since TypeScript doesn't know about our custom table yet
+      setCheckIns(data as unknown as CheckIn[]);
     } catch (error: any) {
       console.error('Error fetching check-ins:', error);
       toast({
@@ -56,7 +57,7 @@ export function useCheckIns() {
     try {
       const { error } = await supabase
         .from('check_ins')
-        .update({ responded: true })
+        .update({ responded: true } as any)
         .eq('id', checkInId)
         .eq('user_id', user.id);
       
