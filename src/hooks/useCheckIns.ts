@@ -11,6 +11,7 @@ export interface CheckIn {
   created_at: string;
   relevance_type: 'journal' | 'conversation' | 'test-result' | 'date' | 'general';
   responded: boolean;
+  user_id: string;
 }
 
 export function useCheckIns() {

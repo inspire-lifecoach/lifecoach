@@ -4,7 +4,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Clock, MessageCircle, PenLine } from "lucide-react";
-import { format } from 'date-fns';
 import { CheckIn } from '@/hooks/useCheckIns';
 
 interface CheckInCardProps {
@@ -39,7 +38,7 @@ const CheckInCard: React.FC<CheckInCardProps> = ({
         return <PenLine className="h-4 w-4 mr-1" />;
       case 'conversation':
         return <MessageCircle className="h-4 w-4 mr-1" />;
-      case 'date':
+      case 'test-result':
         return <Calendar className="h-4 w-4 mr-1" />;
       default:
         return <Clock className="h-4 w-4 mr-1" />;
@@ -47,7 +46,7 @@ const CheckInCard: React.FC<CheckInCardProps> = ({
   };
 
   return (
-    <Card className={`${className} border border-border/50 hover:shadow-md transition-shadow`}>
+    <Card className={`${className} border-border/50 hover:shadow-md transition-shadow`}>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-start justify-between">
           <span>{checkIn.question}</span>
